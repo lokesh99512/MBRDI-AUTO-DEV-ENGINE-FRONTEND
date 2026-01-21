@@ -1,46 +1,69 @@
-import { Languages } from "lucide-react";
+import { Navbar, Container, Nav, Badge } from 'react-bootstrap';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { logoutRequest } from '@/features/auth/authSlice';
 
 const Header = () => {
+  const dispatch = useAppDispatch();
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+
+  const handleLogout = () => {
+    dispatch(logoutRequest());
+  };
+
   return (
-    <header className="flex h-14 items-center justify-between bg-header px-4 text-header-foreground">
-      {/* Left section */}
-      <div className="flex items-center gap-3">
-        <span className="text-xl font-bold tracking-tight">WiPPS</span>
-        <span className="rounded bg-error-foreground px-2 py-0.5 text-xs font-semibold text-primary-foreground">
-          Confidential
-        </span>
-        <span className="rounded border border-header-foreground/30 px-2 py-0.5 text-xs font-medium">
-          DEV
-        </span>
-      </div>
+    <Navbar bg="dark" variant="dark" expand="lg" className="py-2 border-bottom border-secondary">
+      <Container fluid className="px-4">
+        {/* Left section */}
+        <div className="d-flex align-items-center gap-3">
+          <Navbar.Brand href="/" className="fw-bold fs-4 mb-0">
+            WiPPS
+          </Navbar.Brand>
+          <Badge bg="danger" className="text-uppercase small">
+            Confidential
+          </Badge>
+          <Badge bg="light" text="dark" className="border small">
+            DEV
+          </Badge>
+        </div>
 
-      {/* Center - Logo */}
-      <div className="absolute left-1/2 -translate-x-1/2">
-        <svg
-          width="40"
-          height="40"
-          viewBox="0 0 100 100"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="text-header-foreground"
-        >
-          <circle cx="50" cy="50" r="48" stroke="currentColor" strokeWidth="2" fill="none" />
-          <path
-            d="M50 10 L50 90 M50 10 L20 85 M50 10 L80 85"
-            stroke="currentColor"
-            strokeWidth="2"
+        {/* Center - Logo */}
+        <div className="position-absolute start-50 translate-middle-x d-none d-md-block">
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 100 100"
             fill="none"
-          />
-          <circle cx="50" cy="50" r="8" stroke="currentColor" strokeWidth="2" fill="none" />
-        </svg>
-      </div>
+            xmlns="http://www.w3.org/2000/svg"
+            className="text-white"
+          >
+            <circle cx="50" cy="50" r="48" stroke="currentColor" strokeWidth="2" fill="none" />
+            <path
+              d="M50 10 L50 90 M50 10 L20 85 M50 10 L80 85"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="none"
+            />
+            <circle cx="50" cy="50" r="8" stroke="currentColor" strokeWidth="2" fill="none" />
+          </svg>
+        </div>
 
-      {/* Right section */}
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-medium">Felix Baumgartner</span>
-        <Languages className="h-5 w-5" />
-      </div>
-    </header>
+        {/* Right section */}
+        {isAuthenticated && user && (
+          <Nav className="ms-auto d-flex align-items-center gap-3">
+            <span className="text-white small">
+              {user.firstName} {user.lastName}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="btn btn-link text-white p-0"
+              title="Language"
+            >
+              <i className="bi bi-translate fs-5"></i>
+            </button>
+          </Nav>
+        )}
+      </Container>
+    </Navbar>
   );
 };
 

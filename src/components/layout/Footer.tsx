@@ -1,29 +1,35 @@
+import { Container } from 'react-bootstrap';
+
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const links = [
-    { label: "Privacy Statement", href: "#" },
-    { label: "Legal Notice", href: "#" },
-    { label: "Provider", href: "#" },
-    { label: "Help Desk", href: "#" },
+    { label: 'Privacy Statement', href: '#' },
+    { label: 'Legal Notice', href: '#' },
+    { label: 'Provider', href: '#' },
+    { label: 'Help Desk', href: '#' },
   ];
 
   return (
-    <footer className="flex h-10 items-center justify-between bg-footer px-4 text-footer-foreground">
-      <span className="text-xs">
-        © {currentYear} Mercedes-Benz Group AG. All rights reserved.
-      </span>
-      <nav className="flex gap-4">
-        {links.map((link) => (
-          <a
-            key={link.label}
-            href={link.href}
-            className="text-xs text-footer-foreground/80 transition-colors hover:text-footer-foreground"
-          >
-            {link.label}
-          </a>
-        ))}
-      </nav>
+    <footer className="bg-dark text-white py-2">
+      <Container fluid className="px-4">
+        <div className="d-flex justify-content-between align-items-center">
+          <small className="text-white-50">
+            © {currentYear} Enterprise Corp. All rights reserved.
+          </small>
+          <nav className="d-flex gap-3">
+            {links.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-white-50 text-decoration-none small hover-text-white"
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </Container>
     </footer>
   );
 };
