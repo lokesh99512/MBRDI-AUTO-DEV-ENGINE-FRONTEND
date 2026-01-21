@@ -1,49 +1,85 @@
-import { ChevronRight, ClipboardList, Search, LayoutGrid, Star } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Nav } from 'react-bootstrap';
+import { Link, useLocation } from 'react-router-dom';
+import { useAppSelector } from '@/store/hooks';
 
 interface SidebarProps {
-  collapsed?: boolean;
-  onToggle?: () => void;
+  collapsed: boolean;
+  onToggle: () => void;
 }
 
-const Sidebar = ({ collapsed = true, onToggle }: SidebarProps) => {
-  const navItems = [
-    { icon: ClipboardList, label: "Tasks", active: false },
-    { icon: Search, label: "Search", active: false },
-    { icon: LayoutGrid, label: "Dashboard", active: false },
-  ];
+interface NavItem {
+  path: string;
+  icon: string;
+  label: string;
+  roles?: ('admin' | 'user' | 'manager')[];
+}
+
+const navItems: NavItem[] = [
+  { path: '/dashboard', icon: 'bi-grid-1x2', label: 'Dashboard' },
+  { path: '/projects/new', icon: 'bi-plus-square', label: 'New Project' },
+  { path: '/projects', icon: 'bi-folder', label: 'Projects' },
+  { path: '/users', icon: 'bi-people', label: 'Users', roles: ['admin', 'manager'] },
+  { path: '/settings', icon: 'bi-gear', label: 'Settings' },
+];
+
+const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
+  const location = useLocation();
+  const { user } = useAppSelector((state) => state.auth);
+
+  const filteredItems = navItems.filter((item) => {
+    if (!item.roles) return true;
+    return user && item.roles.includes(user.role);
+  });
 
   return (
-    <aside className="flex h-full w-14 flex-col border-r border-sidebar-border bg-sidebar">
+    <aside
+      className={`bg-white border-end d-flex flex-column transition-all ${
+        collapsed ? 'sidebar-collapsed' : 'sidebar-expanded'
+      }`}
+      style={{ 
+        width: collapsed ? '56px' : '220px',
+        minHeight: '100%',
+        transition: 'width 0.2s ease-in-out'
+      }}
+    >
       {/* Toggle button */}
-      <button
-        onClick={onToggle}
-        className="flex h-12 items-center justify-center border-b border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
-      >
-        <ChevronRight className={cn("h-5 w-5 transition-transform", !collapsed && "rotate-180")} />
-      </button>
+      <div className="border-bottom p-2">
+        <button
+          onClick={onToggle}
+          className="btn btn-light w-100 d-flex align-items-center justify-content-center"
+        >
+          <i className={`bi ${collapsed ? 'bi-chevron-right' : 'bi-chevron-left'}`}></i>
+        </button>
+      </div>
 
       {/* Navigation items */}
-      <nav className="flex flex-1 flex-col gap-1 p-2">
-        {navItems.map((item, index) => (
-          <button
-            key={index}
-            className={cn(
-              "flex h-10 w-10 items-center justify-center rounded text-sidebar-foreground transition-colors",
-              item.active
-                ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                : "hover:bg-sidebar-accent"
-            )}
-          >
-            <item.icon className="h-5 w-5" />
-          </button>
+      <Nav className="flex-column flex-grow-1 p-2 gap-1">
+        {filteredItems.map((item) => (
+          <Nav.Item key={item.path}>
+            <Link
+              to={item.path}
+              className={`nav-link d-flex align-items-center gap-2 rounded px-2 py-2 ${
+                location.pathname === item.path || location.pathname.startsWith(item.path + '/')
+                  ? 'bg-primary text-white'
+                  : 'text-dark hover-bg-light'
+              }`}
+              title={collapsed ? item.label : undefined}
+            >
+              <i className={`bi ${item.icon} fs-5`}></i>
+              {!collapsed && <span>{item.label}</span>}
+            </Link>
+          </Nav.Item>
         ))}
-      </nav>
+      </Nav>
 
-      {/* Bottom star button */}
-      <div className="mt-auto">
-        <button className="flex h-14 w-full items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
-          <Star className="h-5 w-5" />
+      {/* Bottom section */}
+      <div className="mt-auto border-top">
+        <button
+          className="btn btn-primary w-100 d-flex align-items-center justify-content-center py-3 rounded-0"
+          title="Favorites"
+        >
+          <i className="bi bi-star-fill"></i>
+          {!collapsed && <span className="ms-2">Favorites</span>}
         </button>
       </div>
     </aside>

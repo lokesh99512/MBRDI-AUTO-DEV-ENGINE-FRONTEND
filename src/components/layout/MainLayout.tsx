@@ -1,26 +1,30 @@
-import { ReactNode, useState } from "react";
-import Header from "./Header";
-import Sidebar from "./Sidebar";
-import Footer from "./Footer";
+import { ReactNode, useState } from 'react';
+import Header from './Header';
+import Sidebar from './Sidebar';
+import Footer from './Footer';
+import NotificationToast from '@/components/common/NotificationToast';
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
 const MainLayout = ({ children }: MainLayoutProps) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="d-flex flex-column min-vh-100">
       <Header />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="d-flex flex-grow-1 overflow-hidden">
         <Sidebar
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="flex-grow-1 overflow-auto bg-light">
+          {children}
+        </main>
       </div>
       <Footer />
+      <NotificationToast />
     </div>
   );
 };
