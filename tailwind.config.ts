@@ -57,6 +57,18 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        header: {
+          DEFAULT: "hsl(var(--header-background))",
+          foreground: "hsl(var(--header-foreground))",
+        },
+        footer: {
+          DEFAULT: "hsl(var(--footer-background))",
+          foreground: "hsl(var(--footer-foreground))",
+        },
+        error: {
+          DEFAULT: "hsl(var(--error-background))",
+          foreground: "hsl(var(--error-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
