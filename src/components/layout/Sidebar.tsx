@@ -1,6 +1,7 @@
 import { Nav } from 'react-bootstrap';
 import { Link, useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/store/hooks';
+import { User } from '@/types';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -11,14 +12,14 @@ interface NavItem {
   path: string;
   icon: string;
   label: string;
-  roles?: ('admin' | 'user' | 'manager')[];
+  roles?: User['role'][];
 }
 
 const navItems: NavItem[] = [
   { path: '/dashboard', icon: 'bi-grid-1x2', label: 'Dashboard' },
   { path: '/projects/new', icon: 'bi-plus-square', label: 'New Project' },
   { path: '/projects', icon: 'bi-folder', label: 'Projects' },
-  { path: '/users', icon: 'bi-people', label: 'Users', roles: ['admin', 'manager'] },
+  { path: '/users', icon: 'bi-people', label: 'Users', roles: ['TENANT_ADMIN', 'admin', 'manager'] },
   { path: '/settings', icon: 'bi-gear', label: 'Settings' },
 ];
 

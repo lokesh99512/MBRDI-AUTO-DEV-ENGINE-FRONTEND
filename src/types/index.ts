@@ -4,13 +4,18 @@
 
 // User & Authentication Types
 export interface User {
-  id: string;
+  id: number;
+  userId?: number;
   email: string;
-  firstName: string;
-  lastName: string;
-  role: 'admin' | 'user' | 'manager';
+  username: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  role: 'TENANT_ADMIN' | 'USER' | 'admin' | 'user' | 'manager';
+  tenantId?: number;
+  tenantName?: string;
   avatar?: string;
-  createdAt: string;
+  createdAt?: string;
   lastLogin?: string;
 }
 
@@ -23,31 +28,51 @@ export interface AuthState {
 }
 
 export interface LoginCredentials {
-  email: string;
+  username: string;
   password: string;
   rememberMe?: boolean;
 }
 
+export interface SignupPayload {
+  tenantName: string;
+  name: string;
+  email: string;
+  username: string;
+  password: string;
+}
+
 export interface LoginResponse {
-  user: User;
   token: string;
+  user?: User;
+}
+
+// JWT Payload decoded from token
+export interface JWTPayload {
+  sub: string; // username
+  userId: number;
+  email: string;
+  tenantId: number;
+  role?: string;
+  iat: number;
+  exp: number;
 }
 
 // Project Types
 export type ProjectType = 'web' | 'microservice' | 'fullstack';
 export type TechnologyStack = 'react' | 'angular' | 'vue' | 'node' | 'python' | 'java' | 'dotnet' | 'go';
-export type ProjectStatus = 'pending' | 'generating' | 'completed' | 'failed';
+export type ProjectStatus = 'ACTIVE' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED' | 'pending' | 'generating' | 'completed' | 'failed';
 
 export interface Project {
-  id: string;
+  id: number | string;
   name: string;
-  type: ProjectType;
-  technologies: TechnologyStack[];
   description: string;
   status: ProjectStatus;
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
+  type?: ProjectType;
+  technologies?: TechnologyStack[];
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  tenantId?: number;
   output?: GenerationOutput;
 }
 
@@ -70,9 +95,17 @@ export interface ProjectState {
 
 export interface CreateProjectPayload {
   name: string;
-  type: ProjectType;
-  technologies: TechnologyStack[];
   description: string;
+  status?: ProjectStatus;
+  type?: ProjectType;
+  technologies?: TechnologyStack[];
+}
+
+export interface UpdateProjectPayload {
+  id: number | string;
+  name?: string;
+  description?: string;
+  status?: ProjectStatus;
 }
 
 // Dashboard Types
