@@ -1,7 +1,7 @@
 import { call, put, takeLatest } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
 import authService from '@/services/authService';
-import { User, LoginResponse } from '@/types';
+import { User, LoginCredentials, LoginResponse } from '@/types';
 import {
   loginRequest,
   loginSuccess,
@@ -18,10 +18,10 @@ import {
 import { addNotification } from '@/features/notifications/notificationSlice';
 
 // Worker Sagas
-function* loginWorker(action: PayloadAction<{ email: string; password: string; rememberMe?: boolean }>) {
+function* loginWorker(action: PayloadAction<LoginCredentials>) {
   try {
     const response: LoginResponse = yield call(
-      authService.login,
+      [authService, authService.login],
       action.payload
     );
     yield put(loginSuccess({ user: response.user, token: response.token }));
@@ -42,7 +42,7 @@ function* loginWorker(action: PayloadAction<{ email: string; password: string; r
 
 function* logoutWorker() {
   try {
-    yield call(authService.logout);
+    yield call([authService, authService.logout]);
     yield put(logoutSuccess());
     yield put(addNotification({
       type: 'info',
@@ -57,7 +57,7 @@ function* logoutWorker() {
 
 function* getCurrentUserWorker() {
   try {
-    const user: User = yield call(authService.getCurrentUser);
+    const user: User = yield call([authService, authService.getCurrentUser]);
     yield put(getCurrentUserSuccess(user));
   } catch (error: any) {
     yield put(getCurrentUserFailure(error.message || 'Failed to get user'));
@@ -66,7 +66,7 @@ function* getCurrentUserWorker() {
 
 function* updateProfileWorker(action: PayloadAction<Partial<User>>) {
   try {
-    const user: User = yield call(authService.updateProfile, action.payload);
+    const user: User = yield call([authService, authService.updateProfile], action.payload);
     yield put(updateProfileSuccess(user));
     yield put(addNotification({
       type: 'success',

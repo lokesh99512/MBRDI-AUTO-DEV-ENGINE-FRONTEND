@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { AuthState, User } from '@/types';
+import { AuthState, User, LoginCredentials } from '@/types';
 
 const initialState: AuthState = {
   user: null,
@@ -14,14 +14,14 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     // Login actions
-    loginRequest: (state, action: PayloadAction<{ email: string; password: string; rememberMe?: boolean }>) => {
+    loginRequest: (state, _action: PayloadAction<LoginCredentials>) => {
       state.loading = true;
       state.error = null;
     },
-    loginSuccess: (state, action: PayloadAction<{ user: User; token: string }>) => {
+    loginSuccess: (state, action: PayloadAction<{ user?: User; token: string }>) => {
       state.loading = false;
       state.isAuthenticated = true;
-      state.user = action.payload.user;
+      state.user = action.payload.user || null;
       state.token = action.payload.token;
       state.error = null;
     },
@@ -60,7 +60,7 @@ const authSlice = createSlice({
     },
 
     // Update profile actions
-    updateProfileRequest: (state, action: PayloadAction<Partial<User>>) => {
+    updateProfileRequest: (state, _action: PayloadAction<Partial<User>>) => {
       state.loading = true;
       state.error = null;
     },

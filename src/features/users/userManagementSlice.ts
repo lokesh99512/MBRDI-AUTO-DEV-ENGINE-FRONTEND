@@ -26,7 +26,7 @@ const userManagementSlice = createSlice({
     },
 
     // Create user
-    createUserRequest: (state, action: PayloadAction<Omit<User, 'id' | 'createdAt'>>) => {
+    createUserRequest: (state, _action: PayloadAction<Omit<User, 'id' | 'createdAt'>>) => {
       state.loading = true;
       state.error = null;
     },
@@ -40,7 +40,7 @@ const userManagementSlice = createSlice({
     },
 
     // Update user role
-    updateUserRoleRequest: (state, action: PayloadAction<{ id: string; role: User['role'] }>) => {
+    updateUserRoleRequest: (state, _action: PayloadAction<{ id: string | number; role: User['role'] }>) => {
       state.loading = true;
       state.error = null;
     },
@@ -57,11 +57,11 @@ const userManagementSlice = createSlice({
     },
 
     // Delete user
-    deleteUserRequest: (state, action: PayloadAction<string>) => {
+    deleteUserRequest: (state, _action: PayloadAction<string | number>) => {
       state.loading = true;
       state.error = null;
     },
-    deleteUserSuccess: (state, action: PayloadAction<string>) => {
+    deleteUserSuccess: (state, action: PayloadAction<string | number>) => {
       state.loading = false;
       state.users = state.users.filter(u => u.id !== action.payload);
     },
