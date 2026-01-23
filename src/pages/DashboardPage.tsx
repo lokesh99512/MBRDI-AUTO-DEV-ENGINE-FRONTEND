@@ -72,7 +72,7 @@ const DashboardPage = () => {
             <h5 className="mb-3">Quick Actions</h5>
             <div className="d-grid gap-2">
               <Link to="/projects/new" className="btn btn-outline-primary"><i className="bi bi-plus-circle me-2"></i>Create New Project</Link>
-              <Link to="/projects" className="btn btn-outline-secondary"><i className="bi bi-clock-history me-2"></i>View History</Link>
+              <Link to="/projects" className="btn btn-outline-secondary"><i className="bi bi-clock-history me-2"></i>View Projects</Link>
             </div>
           </Col>
         </Row>

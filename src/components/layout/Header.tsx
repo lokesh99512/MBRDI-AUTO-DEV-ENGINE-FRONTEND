@@ -15,8 +15,8 @@ const Header = () => {
       <Container fluid className="px-4">
         {/* Left section */}
         <div className="d-flex align-items-center gap-3">
-          <Navbar.Brand href="/" className="fw-bold fs-4 mb-0">
-            WiPPS
+          <Navbar.Brand href="/tenant/dashboard" className="fw-bold fs-5 mb-0">
+            MBRDI AUTO DEV ENGINE
           </Navbar.Brand>
           <Badge bg="danger" className="text-uppercase small">
             Confidential
@@ -50,15 +50,14 @@ const Header = () => {
         {/* Right section */}
         {isAuthenticated && user && (
           <Nav className="ms-auto d-flex align-items-center gap-3">
-            <span className="text-white small">
-              {user.firstName} {user.lastName}
-            </span>
+            <span className="text-white small">{user.name || user.username}</span>
             <button
               onClick={handleLogout}
-              className="btn btn-link text-white p-0"
-              title="Language"
+              className="btn btn-outline-light btn-sm"
+              title="Logout"
             >
-              <i className="bi bi-translate fs-5"></i>
+              <i className="bi bi-box-arrow-right me-2"></i>
+              Logout
             </button>
           </Nav>
         )}

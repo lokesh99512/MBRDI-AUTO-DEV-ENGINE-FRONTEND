@@ -1,11 +1,14 @@
 import { call, put, takeLatest } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
 import authService from '@/services/authService';
-import { User, LoginCredentials, LoginResponse } from '@/types';
+import { User, LoginCredentials, LoginResponse, SignupPayload } from '@/types';
 import {
   loginRequest,
   loginSuccess,
   loginFailure,
+  signupRequest,
+  signupSuccess,
+  signupFailure,
   logoutRequest,
   logoutSuccess,
   getCurrentUserRequest,
@@ -36,6 +39,28 @@ function* loginWorker(action: PayloadAction<LoginCredentials>) {
       type: 'error',
       message: error.message || 'Login failed',
       title: 'Authentication Error',
+    }));
+  }
+}
+
+function* signupWorker(action: PayloadAction<SignupPayload>) {
+  try {
+    const response: LoginResponse = yield call(
+      [authService, authService.signup],
+      action.payload
+    );
+    yield put(signupSuccess({ user: response.user, token: response.token }));
+    yield put(addNotification({
+      type: 'success',
+      message: 'Tenant account created successfully!',
+      title: 'Signup Complete',
+    }));
+  } catch (error: any) {
+    yield put(signupFailure(error.message || 'Signup failed'));
+    yield put(addNotification({
+      type: 'error',
+      message: error.message || 'Signup failed',
+      title: 'Signup Error',
     }));
   }
 }
@@ -86,6 +111,7 @@ function* updateProfileWorker(action: PayloadAction<Partial<User>>) {
 // Watcher Saga
 export function* authSaga() {
   yield takeLatest(loginRequest.type, loginWorker);
+  yield takeLatest(signupRequest.type, signupWorker);
   yield takeLatest(logoutRequest.type, logoutWorker);
   yield takeLatest(getCurrentUserRequest.type, getCurrentUserWorker);
   yield takeLatest(updateProfileRequest.type, updateProfileWorker);

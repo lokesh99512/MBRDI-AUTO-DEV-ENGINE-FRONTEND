@@ -7,7 +7,9 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { useAppSelector } from '@/store/hooks';
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
+import ProjectsPage from "./pages/ProjectsPage";
 import NotFound from "./pages/NotFound";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -27,7 +29,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAppSelector((state) => state.auth);
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/tenant/dashboard" replace />;
   }
   return <>{children}</>;
 };
@@ -35,7 +37,9 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 const AppRoutes = () => (
   <Routes>
     <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-    <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+    <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
+    <Route path="/tenant/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+    <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
     <Route path="/" element={<Navigate to="/login" replace />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
