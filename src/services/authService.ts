@@ -3,20 +3,6 @@ import API_CONFIG from '@/config/api.config';
 import { LoginCredentials, LoginResponse, User, SignupPayload } from '@/types';
 import { extractUserFromToken } from '@/utils/jwt';
 
-// Mock delay for development
-const mockDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Mock user data for development fallback
-const mockUser: User = {
-  id: 1,
-  email: 'lokesh@mbrdi.com',
-  username: 'lokesh_admin',
-  name: 'Lokesh',
-  role: 'TENANT_ADMIN',
-  tenantId: 1,
-  tenantName: 'MBRDI Auto Dev',
-};
-
 export const authService = {
   /**
    * Login API call
@@ -49,24 +35,6 @@ export const authService = {
         user: user || undefined 
       };
     } catch (error: any) {
-      // Development fallback with mock data
-      if (import.meta.env.DEV && error.code === 'ERR_NETWORK') {
-        console.warn('API not available, using mock data');
-        await mockDelay(1000);
-        
-        if (credentials.username === 'lokesh_admin' && credentials.password === 'Admin@123') {
-          const mockToken = 'mock-jwt-token-' + Date.now();
-          if (credentials.rememberMe) {
-            localStorage.setItem('authToken', mockToken);
-          } else {
-            sessionStorage.setItem('authToken', mockToken);
-          }
-          return { user: mockUser, token: mockToken };
-        }
-        
-        throw new Error('Invalid username or password');
-      }
-      
       // Handle API error response
       const message = error.response?.data?.message || error.message || 'Login failed';
       throw new Error(message);
@@ -102,9 +70,8 @@ export const authService = {
   logout: async (): Promise<void> => {
     try {
       await api.post(API_CONFIG.ENDPOINTS.AUTH.LOGOUT);
-    } catch (error) {
+    } catch {
       // Continue with local cleanup even if API fails
-      console.warn('Logout API call failed, clearing local tokens');
     }
     localStorage.removeItem('authToken');
     sessionStorage.removeItem('authToken');
@@ -129,12 +96,7 @@ export const authService = {
       if (user) {
         return user;
       }
-      
-      // Development fallback
-      if (import.meta.env.DEV) {
-        return mockUser;
-      }
-      
+
       throw new Error('Failed to get user information');
     }
   },
@@ -162,11 +124,6 @@ export const authService = {
       const response = await api.patch<User>(API_CONFIG.ENDPOINTS.SETTINGS.PROFILE, data);
       return response.data;
     } catch (error: any) {
-      // Development fallback
-      if (import.meta.env.DEV) {
-        await mockDelay(800);
-        return { ...mockUser, ...data };
-      }
       throw new Error(error.response?.data?.message || 'Failed to update profile');
     }
   },

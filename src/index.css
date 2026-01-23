@@ -61,6 +61,24 @@
     /* Badge colors */
     --badge-confidential: 0 70% 50%;
     --badge-dev: 0 0% 95%;
+
+    /* Auth / Marketing surfaces */
+    --auth-hero-start: 220 45% 14%;
+    --auth-hero-mid: 220 45% 16%;
+    --auth-hero-end: 215 55% 22%;
+    --auth-accent: 207 90% 45%;
+    --auth-accent-2: 210 90% 55%;
+    --auth-hero-gradient: linear-gradient(
+      135deg,
+      hsl(var(--auth-hero-start)) 0%,
+      hsl(var(--auth-hero-mid)) 55%,
+      hsl(var(--auth-hero-end)) 100%
+    );
+    --auth-button-gradient: linear-gradient(
+      135deg,
+      hsl(var(--auth-accent-2)) 0%,
+      hsl(var(--auth-accent)) 100%
+    );
   }
 
   .dark {
