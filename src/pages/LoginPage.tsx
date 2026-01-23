@@ -1,27 +1,22 @@
-import { useState, useEffect } from 'react';
-import { Container, Row, Col, Form, Button, Alert, Spinner } from 'react-bootstrap';
+import { useEffect } from 'react';
+import { Container, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loginRequest, clearAuthError } from '@/features/auth/authSlice';
+import { Formik } from 'formik';
+import * as Yup from 'yup';
+import { Link } from 'react-router-dom';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { loading, error, isAuthenticated, user } = useAppSelector((state) => state.auth);
 
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    rememberMe: false,
-  });
-
-  const [validated, setValidated] = useState(false);
-
   // Redirect based on role after successful login
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === 'TENANT_ADMIN' || user.role === 'admin') {
-        navigate('/dashboard');
+        navigate('/tenant/dashboard');
       } else {
         navigate('/projects');
       }
@@ -35,22 +30,11 @@ const LoginPage = () => {
     };
   }, [dispatch]);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    
-    if (form.checkValidity() === false) {
-      e.stopPropagation();
-      setValidated(true);
-      return;
-    }
-
-    dispatch(loginRequest(formData));
-  };
-
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  const validationSchema = Yup.object({
+    username: Yup.string().trim().required('Username or email is required').max(255, 'Too long'),
+    password: Yup.string().required('Password is required').min(6, 'Password must be at least 6 characters').max(255, 'Too long'),
+    rememberMe: Yup.boolean().default(false),
+  });
 
   return (
     <div className="min-vh-100 d-flex">
@@ -59,7 +43,7 @@ const LoginPage = () => {
         className="d-none d-lg-flex flex-column justify-content-center p-5"
         style={{
           width: '50%',
-          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+          background: 'var(--auth-hero-gradient)',
         }}
       >
         <div className="text-white px-4" style={{ maxWidth: '540px', margin: '0 auto' }}>
@@ -70,7 +54,7 @@ const LoginPage = () => {
               style={{ 
                 width: '64px', 
                 height: '64px', 
-                background: 'linear-gradient(135deg, #00d4ff 0%, #0066ff 100%)',
+                background: 'var(--auth-button-gradient)',
               }}
             >
               <i className="bi bi-cpu fs-2 text-white"></i>
@@ -154,7 +138,7 @@ const LoginPage = () => {
         style={{ 
           width: '100%',
           maxWidth: '100%',
-          background: '#f8f9fa',
+          background: 'hsl(var(--muted))',
         }}
       >
         <Container style={{ maxWidth: '420px' }}>
@@ -165,7 +149,7 @@ const LoginPage = () => {
               style={{ 
                 width: '56px', 
                 height: '56px', 
-                background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)',
+                background: 'var(--auth-hero-gradient)',
               }}
             >
               <i className="bi bi-cpu fs-3 text-white"></i>
@@ -187,86 +171,99 @@ const LoginPage = () => {
               </Alert>
             )}
 
-            <Form noValidate validated={validated} onSubmit={handleSubmit}>
-              <Form.Group className="mb-3">
-                <Form.Label className="small fw-medium text-dark">Username or Email</Form.Label>
-                <div className="input-group">
-                  <span className="input-group-text bg-light border-end-0">
-                    <i className="bi bi-person text-muted"></i>
-                  </span>
-                  <Form.Control
-                    type="text"
-                    placeholder="Enter username or email"
-                    value={formData.username}
-                    onChange={(e) => handleInputChange('username', e.target.value)}
-                    required
-                    className="border-start-0 ps-0"
-                    style={{ boxShadow: 'none' }}
-                  />
-                </div>
-                <Form.Control.Feedback type="invalid">
-                  Please enter your username or email.
-                </Form.Control.Feedback>
-              </Form.Group>
+            <Formik
+              initialValues={{ username: '', password: '', rememberMe: false }}
+              validationSchema={validationSchema}
+              onSubmit={(values) => {
+                dispatch(loginRequest(values));
+              }}
+            >
+              {({ handleSubmit, handleChange, handleBlur, values, touched, errors, isSubmitting }) => (
+                <Form noValidate onSubmit={handleSubmit}>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="small fw-medium text-dark">Username or Email</Form.Label>
+                    <div className="input-group">
+                      <span className="input-group-text bg-light border-end-0">
+                        <i className="bi bi-person text-muted"></i>
+                      </span>
+                      <Form.Control
+                        name="username"
+                        type="text"
+                        placeholder="Enter username or email"
+                        value={values.username}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        isInvalid={!!(touched.username && errors.username)}
+                        className="border-start-0 ps-0"
+                        style={{ boxShadow: 'none' }}
+                        autoComplete="username"
+                      />
+                    </div>
+                    <Form.Control.Feedback type="invalid">
+                      {errors.username}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label className="small fw-medium text-dark">Password</Form.Label>
-                <div className="input-group">
-                  <span className="input-group-text bg-light border-end-0">
-                    <i className="bi bi-lock text-muted"></i>
-                  </span>
-                  <Form.Control
-                    type="password"
-                    placeholder="Enter password"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                    required
-                    minLength={6}
-                    className="border-start-0 ps-0"
-                    style={{ boxShadow: 'none' }}
-                  />
-                </div>
-                <Form.Control.Feedback type="invalid">
-                  Password must be at least 6 characters.
-                </Form.Control.Feedback>
-              </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="small fw-medium text-dark">Password</Form.Label>
+                    <div className="input-group">
+                      <span className="input-group-text bg-light border-end-0">
+                        <i className="bi bi-lock text-muted"></i>
+                      </span>
+                      <Form.Control
+                        name="password"
+                        type="password"
+                        placeholder="Enter password"
+                        value={values.password}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        isInvalid={!!(touched.password && errors.password)}
+                        className="border-start-0 ps-0"
+                        style={{ boxShadow: 'none' }}
+                        autoComplete="current-password"
+                      />
+                    </div>
+                    <Form.Control.Feedback type="invalid">
+                      {errors.password}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <Form.Check
-                  type="checkbox"
-                  id="rememberMe"
-                  label={<span className="small">Remember me</span>}
-                  checked={formData.rememberMe}
-                  onChange={(e) => handleInputChange('rememberMe', e.target.checked)}
-                />
-                <a href="#" className="small text-primary text-decoration-none">
-                  Forgot password?
-                </a>
-              </div>
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <Form.Check
+                      type="checkbox"
+                      id="rememberMe"
+                      name="rememberMe"
+                      label={<span className="small">Remember me</span>}
+                      checked={values.rememberMe}
+                      onChange={handleChange}
+                    />
+                    <button type="button" className="btn btn-link small text-primary text-decoration-none p-0" disabled>
+                      Forgot password?
+                    </button>
+                  </div>
 
-              <Button 
-                variant="primary" 
-                type="submit" 
-                className="w-100 py-2 fw-medium"
-                disabled={loading}
-                style={{
-                  background: 'linear-gradient(135deg, #0066ff 0%, #0052cc 100%)',
-                  border: 'none',
-                }}
-              >
-                {loading ? (
-                  <>
-                    <Spinner size="sm" className="me-2" />
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    <i className="bi bi-box-arrow-in-right me-2"></i>
-                    Sign In
-                  </>
-                )}
-              </Button>
-            </Form>
+                  <Button
+                    variant="primary"
+                    type="submit"
+                    className="w-100 py-2 fw-medium"
+                    disabled={loading || isSubmitting}
+                    style={{ background: 'var(--auth-button-gradient)', border: 'none' }}
+                  >
+                    {loading ? (
+                      <>
+                        <Spinner size="sm" className="me-2" />
+                        Signing in...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-box-arrow-in-right me-2"></i>
+                        Sign In
+                      </>
+                    )}
+                  </Button>
+                </Form>
+              )}
+            </Formik>
 
             {/* Info Text */}
             <div className="mt-4 text-center">
@@ -274,24 +271,12 @@ const LoginPage = () => {
                 <i className="bi bi-info-circle me-1"></i>
                 This login works for both tenant admins and users
               </p>
-              <a href="#" className="small text-primary text-decoration-none">
+              <Link to="/signup" className="small text-primary text-decoration-none">
                 <i className="bi bi-building me-1"></i>
                 Create Tenant Account
-              </a>
+              </Link>
             </div>
           </div>
-
-          {/* Demo Credentials */}
-          {import.meta.env.DEV && (
-            <div className="mt-4 p-3 bg-light rounded-3 border">
-              <div className="small text-muted text-center">
-                <i className="bi bi-lightbulb me-1"></i>
-                <strong>Demo Credentials:</strong>
-                <br />
-                Username: <code>lokesh_admin</code> | Password: <code>Admin@123</code>
-              </div>
-            </div>
-          )}
         </Container>
       </div>
     </div>
