@@ -12,45 +12,6 @@ const mockStats: DashboardStats = {
   activeUsers: 12,
 };
 
-// Mock recent activity
-const mockActivity: ActivityItem[] = [
-  {
-    id: '1',
-    action: 'Created project',
-    projectName: 'E-Commerce Platform',
-    user: 'Felix Baumgartner',
-    timestamp: '2024-01-21T10:30:00Z',
-  },
-  {
-    id: '2',
-    action: 'Generated output',
-    projectName: 'Analytics Dashboard',
-    user: 'Maria Schmidt',
-    timestamp: '2024-01-21T09:15:00Z',
-  },
-  {
-    id: '3',
-    action: 'Updated project',
-    projectName: 'Notification Service',
-    user: 'Hans Mueller',
-    timestamp: '2024-01-21T08:45:00Z',
-  },
-  {
-    id: '4',
-    action: 'Regenerated output',
-    projectName: 'User Management API',
-    user: 'Felix Baumgartner',
-    timestamp: '2024-01-20T16:20:00Z',
-  },
-  {
-    id: '5',
-    action: 'Created project',
-    projectName: 'Payment Gateway',
-    user: 'Anna Weber',
-    timestamp: '2024-01-20T14:00:00Z',
-  },
-];
-
 export const dashboardService = {
   // Get dashboard statistics
   getStats: async (): Promise<DashboardStats> => {
@@ -66,13 +27,13 @@ export const dashboardService = {
   // Get recent activity
   getRecentActivity: async (limit: number = 10): Promise<ActivityItem[]> => {
     try {
-      const response = await api.get<ActivityItem[]>('/dashboard/activity', { 
+      const response = await api.get<ActivityItem[]>('/api/projects', { 
         params: { limit } 
       });
       return response.data;
     } catch (error) {
       await mockDelay(400);
-      return mockActivity.slice(0, limit);
+      return [];
     }
   },
 };
