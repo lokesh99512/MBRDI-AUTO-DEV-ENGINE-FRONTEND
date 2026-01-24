@@ -14,11 +14,8 @@ const SignupPage = () => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === 'TENANT_ADMIN' || user.role === 'admin') {
-        navigate('/tenant/dashboard');
-      } else {
-        navigate('/projects');
-      }
+      // All users land on dashboard
+      navigate('/dashboard');
     }
   }, [isAuthenticated, user, navigate]);
 

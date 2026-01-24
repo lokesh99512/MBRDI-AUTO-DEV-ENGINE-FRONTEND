@@ -15,7 +15,7 @@ const Header = () => {
       <Container fluid className="px-4">
         {/* Left section */}
         <div className="d-flex align-items-center gap-3">
-          <Navbar.Brand href="/tenant/dashboard" className="fw-bold fs-5 mb-0">
+          <Navbar.Brand href="/dashboard" className="fw-bold fs-5 mb-0">
             MBRDI AUTO DEV ENGINE
           </Navbar.Brand>
           <Badge bg="danger" className="text-uppercase small">
