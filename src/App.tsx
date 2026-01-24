@@ -29,18 +29,25 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAppSelector((state) => state.auth);
   if (isAuthenticated) {
-    return <Navigate to="/tenant/dashboard" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
   return <>{children}</>;
+};
+
+const IndexRoute = () => {
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
 };
 
 const AppRoutes = () => (
   <Routes>
     <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
     <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
-    <Route path="/tenant/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+    <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+    {/* backward compatible */}
+    <Route path="/tenant/dashboard" element={<Navigate to="/dashboard" replace />} />
     <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
-    <Route path="/" element={<Navigate to="/login" replace />} />
+    <Route path="/" element={<IndexRoute />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
