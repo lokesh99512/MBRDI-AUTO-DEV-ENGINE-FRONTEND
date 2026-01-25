@@ -35,6 +35,8 @@ apiClient.interceptors.response.use(
       if (status === 401) {
         localStorage.removeItem('authToken');
         sessionStorage.removeItem('authToken');
+        // Dispatch a custom event to notify the app of logout
+        window.dispatchEvent(new CustomEvent('auth:logout'));
         // Only redirect if not already on login page
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';
