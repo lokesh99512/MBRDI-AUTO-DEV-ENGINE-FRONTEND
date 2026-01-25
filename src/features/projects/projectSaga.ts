@@ -1,7 +1,7 @@
 import { call, put, takeLatest } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
 import projectService from '@/services/projectService';
-import { Project, CreateProjectPayload, GenerationOutput, ProjectFilters, PaginatedResponse } from '@/types';
+import { Project, CreateProjectPayload, GenerationOutput, ProjectFilters, PaginatedResponse, UpdateProjectPayload } from '@/types';
 import {
   fetchProjectsRequest,
   fetchProjectsSuccess,
@@ -18,6 +18,9 @@ import {
   regenerateProjectRequest,
   regenerateProjectSuccess,
   regenerateProjectFailure,
+  updateProjectRequest,
+  updateProjectSuccess,
+  updateProjectFailure,
   deleteProjectRequest,
   deleteProjectSuccess,
   deleteProjectFailure,
@@ -117,6 +120,26 @@ function* regenerateProjectWorker(action: PayloadAction<{ projectId: string; des
   }
 }
 
+function* updateProjectWorker(action: PayloadAction<{ id: string; data: Partial<Project> }>) {
+  try {
+    const payload: UpdateProjectPayload = { id: action.payload.id, ...action.payload.data };
+    const project: Project = yield call(projectService.updateProject, payload);
+    yield put(updateProjectSuccess(project));
+    yield put(addNotification({
+      type: 'success',
+      message: 'Project updated successfully',
+      title: 'Project Updated',
+    }));
+  } catch (error: any) {
+    yield put(updateProjectFailure(error.message || 'Failed to update project'));
+    yield put(addNotification({
+      type: 'error',
+      message: error.message || 'Failed to update project',
+      title: 'Error',
+    }));
+  }
+}
+
 function* deleteProjectWorker(action: PayloadAction<string>) {
   try {
     yield call(projectService.deleteProject, action.payload);
@@ -143,6 +166,7 @@ export function* projectSaga() {
   yield takeLatest(createProjectRequest.type, createProjectWorker);
   yield takeLatest(generateOutputRequest.type, generateOutputWorker);
   yield takeLatest(regenerateProjectRequest.type, regenerateProjectWorker);
+  yield takeLatest(updateProjectRequest.type, updateProjectWorker);
   yield takeLatest(deleteProjectRequest.type, deleteProjectWorker);
 }
 
