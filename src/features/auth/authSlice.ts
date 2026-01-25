@@ -1,13 +1,22 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { AuthState, User, LoginCredentials, SignupPayload } from '@/types';
+import { extractUserFromToken } from '@/utils/jwt';
 
-const initialState: AuthState = {
-  user: null,
-  token: localStorage.getItem('authToken') || sessionStorage.getItem('authToken'),
-  isAuthenticated: !!(localStorage.getItem('authToken') || sessionStorage.getItem('authToken')),
-  loading: false,
-  error: null,
+// Restore user from token on initialization
+const getInitialAuthState = (): AuthState => {
+  const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+  const user = token ? extractUserFromToken(token) : null;
+  
+  return {
+    user,
+    token,
+    isAuthenticated: !!token && !!user,
+    loading: false,
+    error: null,
+  };
 };
+
+const initialState: AuthState = getInitialAuthState();
 
 const authSlice = createSlice({
   name: 'auth',
