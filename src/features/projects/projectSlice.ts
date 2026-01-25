@@ -96,6 +96,24 @@ const projectSlice = createSlice({
       state.error = action.payload;
     },
 
+    // Update project
+    updateProjectRequest: (state, action: PayloadAction<{ id: string; data: Partial<Project> }>) => {
+      state.loading = true;
+      state.error = null;
+    },
+    updateProjectSuccess: (state, action: PayloadAction<Project>) => {
+      state.loading = false;
+      const idx = state.projects.findIndex(p => p.id === action.payload.id);
+      if (idx > -1) state.projects[idx] = action.payload;
+      if (state.currentProject?.id === action.payload.id) {
+        state.currentProject = action.payload;
+      }
+    },
+    updateProjectFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false;
+      state.error = action.payload;
+    },
+
     // Delete project
     deleteProjectRequest: (state, action: PayloadAction<string>) => {
       state.loading = true;
@@ -112,7 +130,6 @@ const projectSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
-
     // Clear current project
     clearCurrentProject: (state) => {
       state.currentProject = null;
@@ -141,6 +158,9 @@ export const {
   regenerateProjectRequest,
   regenerateProjectSuccess,
   regenerateProjectFailure,
+  updateProjectRequest,
+  updateProjectSuccess,
+  updateProjectFailure,
   deleteProjectRequest,
   deleteProjectSuccess,
   deleteProjectFailure,
