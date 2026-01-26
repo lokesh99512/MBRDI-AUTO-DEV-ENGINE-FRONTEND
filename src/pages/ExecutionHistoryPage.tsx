@@ -1,12 +1,13 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Button, Spinner, Alert } from 'react-bootstrap';
-import { ArrowLeft, History, RefreshCw } from 'lucide-react';
+import { ArrowLeft, History, RefreshCw, Loader2 } from 'lucide-react';
 
 import MainLayout from '@/components/layout/MainLayout';
 import ExecutionCard from '@/components/executions/ExecutionCard';
 import ExecutionListSkeleton from '@/components/executions/ExecutionListSkeleton';
 import ExecutionDetailPanel from '@/components/executions/ExecutionDetailPanel';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   fetchExecutionsRequest,
@@ -105,28 +106,30 @@ const ExecutionHistoryPage = () => {
 
   return (
     <MainLayout>
-      <div className="min-vh-100 bg-light">
-        <Container fluid className="py-4">
+      <div className="min-h-screen bg-muted/30">
+        <div className="container mx-auto px-4 py-6 max-w-5xl">
           {/* Header Section */}
-          <div className="mb-4">
+          <div className="mb-6">
             <Button
-              variant="outline-secondary"
+              variant="outline"
               size="sm"
-              className="mb-3"
+              className="mb-4"
               onClick={() => navigate('/dashboard')}
             >
-              <ArrowLeft size={16} className="me-2" />
+              <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Projects
             </Button>
 
-            <div className="d-flex align-items-center gap-3 mb-2">
-              <History size={32} className="text-primary" />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <History className="h-6 w-6 text-primary" />
+              </div>
               <div>
-                <h1 className="h3 fw-bold mb-0">Project Execution History</h1>
-                <p className="text-muted mb-0">
-                  Project ID: <code className="bg-white px-2 py-1 rounded">{projectId}</code>
+                <h1 className="text-2xl font-bold text-foreground">Project Execution History</h1>
+                <p className="text-muted-foreground text-sm">
+                  Project ID: <code className="bg-muted px-2 py-0.5 rounded text-xs">{projectId}</code>
                   {totalElements > 0 && (
-                    <span className="ms-2">• {totalElements} total executions</span>
+                    <span className="ml-2">• {totalElements} total executions</span>
                   )}
                 </p>
               </div>
@@ -135,14 +138,14 @@ const ExecutionHistoryPage = () => {
 
           {/* Error State */}
           {error && !loading && (
-            <Alert variant="danger" className="d-flex align-items-center justify-content-between">
-              <div>
-                <strong>Error:</strong> {error}
-              </div>
-              <Button variant="danger" size="sm" onClick={handleRetry}>
-                <RefreshCw size={14} className="me-1" />
-                Retry
-              </Button>
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription className="flex items-center justify-between">
+                <span><strong>Error:</strong> {error}</span>
+                <Button variant="destructive" size="sm" onClick={handleRetry}>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Retry
+                </Button>
+              </AlertDescription>
             </Alert>
           )}
 
@@ -151,13 +154,15 @@ const ExecutionHistoryPage = () => {
 
           {/* Empty State */}
           {!loading && !error && executions.length === 0 && (
-            <div className="text-center py-5">
-              <History size={64} className="text-muted mb-3" />
-              <h4 className="text-muted">No execution history found</h4>
-              <p className="text-muted">
+            <div className="text-center py-16 bg-card rounded-lg border">
+              <div className="p-4 bg-muted/50 rounded-full w-fit mx-auto mb-4">
+                <History className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <h4 className="text-lg font-medium text-muted-foreground mb-2">No execution history found</h4>
+              <p className="text-muted-foreground text-sm mb-4">
                 This project doesn't have any execution history yet.
               </p>
-              <Button variant="outline-primary" onClick={() => navigate('/dashboard')}>
+              <Button variant="outline" onClick={() => navigate('/dashboard')}>
                 Back to Dashboard
               </Button>
             </div>
@@ -165,7 +170,7 @@ const ExecutionHistoryPage = () => {
 
           {/* Execution List */}
           {!loading && executions.length > 0 && (
-            <div className="execution-list">
+            <div className="space-y-4">
               {executions.map((execution) => (
                 <ExecutionCard
                   key={execution.id}
@@ -175,22 +180,22 @@ const ExecutionHistoryPage = () => {
               ))}
 
               {/* Load More Trigger */}
-              <div ref={loadMoreTriggerRef} className="py-3">
+              <div ref={loadMoreTriggerRef} className="py-4">
                 {loadingMore && (
-                  <div className="text-center">
-                    <Spinner animation="border" size="sm" className="me-2" />
-                    <span className="text-muted">Loading more...</span>
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">Loading more...</span>
                   </div>
                 )}
                 {!loadingMore && !hasMorePages && executions.length > 0 && (
-                  <div className="text-center text-muted py-3">
-                    <span>No more execution history</span>
+                  <div className="text-center text-muted-foreground text-sm py-2">
+                    No more execution history
                   </div>
                 )}
               </div>
             </div>
           )}
-        </Container>
+        </div>
       </div>
 
       {/* Detail Side Panel */}
