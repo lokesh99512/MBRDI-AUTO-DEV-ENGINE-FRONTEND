@@ -1,17 +1,19 @@
-import { Card, Badge } from 'react-bootstrap';
 import { GitBranch, GitCommit, User, Calendar, ExternalLink } from 'lucide-react';
 import { Execution, ExecutionStatus } from '@/types/execution';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface ExecutionCardProps {
   execution: Execution;
   onClick?: () => void;
 }
 
-const statusConfig: Record<ExecutionStatus, { variant: string; className: string }> = {
-  SUCCESS: { variant: 'success', className: 'bg-success' },
-  FAILED: { variant: 'danger', className: 'bg-danger' },
-  RUNNING: { variant: 'warning', className: 'bg-warning text-dark' },
+const statusConfig: Record<ExecutionStatus, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string; label: string }> = {
+  SUCCESS: { variant: 'default', className: 'bg-green-500 hover:bg-green-500/80', label: 'Success' },
+  FAILED: { variant: 'destructive', className: '', label: 'Failed' },
+  RUNNING: { variant: 'secondary', className: 'bg-amber-500 text-white hover:bg-amber-500/80', label: 'Running' },
 };
 
 const ExecutionCard = ({ execution, onClick }: ExecutionCardProps) => {
@@ -23,56 +25,57 @@ const ExecutionCard = ({ execution, onClick }: ExecutionCardProps) => {
 
   return (
     <Card 
-      className="mb-3 border-0 shadow-sm hover-shadow transition-all"
-      style={{ cursor: 'pointer' }}
+      className="cursor-pointer transition-all duration-200 hover:shadow-md hover:border-primary/20 bg-card"
       onClick={onClick}
     >
-      <Card.Body className="p-4">
+      <CardContent className="p-5">
         {/* Top Row - Status Badge */}
-        <div className="d-flex justify-content-between align-items-start mb-3">
-          <div className="d-flex align-items-center gap-2">
-            <GitBranch size={16} className="text-muted" />
-            <code className="small bg-light px-2 py-1 rounded">{execution.executionBranch}</code>
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex items-center gap-2">
+            <GitBranch className="h-4 w-4 text-muted-foreground" />
+            <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{execution.executionBranch}</code>
           </div>
-          <Badge className={statusStyle.className}>{execution.status}</Badge>
+          <Badge variant={statusStyle.variant} className={cn(statusStyle.className)}>
+            {statusStyle.label}
+          </Badge>
         </div>
 
         {/* Branch Info */}
-        <div className="d-flex align-items-center gap-2 mb-3 text-muted small">
-          <GitCommit size={14} />
-          <span>Base: <code className="bg-light px-1 rounded">{execution.baseBranch}</code></span>
+        <div className="flex items-center gap-2 mb-4 text-muted-foreground text-sm">
+          <GitCommit className="h-3.5 w-3.5" />
+          <span>Base: <code className="bg-muted px-1.5 py-0.5 rounded text-xs">{execution.baseBranch}</code></span>
         </div>
 
         {/* Prompt Preview */}
-        <div className="mb-3">
-          <div className="fw-semibold small text-muted mb-1">Prompt</div>
-          <p className="mb-0 text-dark" style={{ lineHeight: 1.5 }}>{truncatedPrompt}</p>
+        <div className="mb-4">
+          <div className="text-xs font-medium text-muted-foreground mb-1.5">Prompt</div>
+          <p className="text-sm text-foreground leading-relaxed">{truncatedPrompt}</p>
         </div>
 
         {/* LLM Response Summary */}
         {execution.llmResponseSummary && (
-          <div className="mb-3 p-3 bg-light rounded">
-            <div className="fw-semibold small text-muted mb-1">LLM Response</div>
-            <p className="mb-0 small text-secondary">{execution.llmResponseSummary}</p>
+          <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+            <div className="text-xs font-medium text-muted-foreground mb-1">LLM Response</div>
+            <p className="text-sm text-muted-foreground">{execution.llmResponseSummary}</p>
           </div>
         )}
 
         {/* Error Message */}
         {execution.status === 'FAILED' && execution.errorMessage && (
-          <div className="mb-3 p-3 bg-danger bg-opacity-10 border border-danger rounded">
-            <div className="fw-semibold small text-danger mb-1">Error</div>
-            <p className="mb-0 small text-danger">{execution.errorMessage}</p>
+          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <div className="text-xs font-medium text-destructive mb-1">Error</div>
+            <p className="text-sm text-destructive">{execution.errorMessage}</p>
           </div>
         )}
 
         {/* Meta Info Row */}
-        <div className="d-flex flex-wrap gap-3 pt-3 border-top text-muted small">
-          <div className="d-flex align-items-center gap-1">
-            <User size={14} />
+        <div className="flex flex-wrap gap-4 pt-4 border-t text-muted-foreground text-xs">
+          <div className="flex items-center gap-1.5">
+            <User className="h-3.5 w-3.5" />
             <span>User ID: {execution.userId}</span>
           </div>
-          <div className="d-flex align-items-center gap-1">
-            <Calendar size={14} />
+          <div className="flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5" />
             <span>{formattedDate}</span>
           </div>
           {execution.gitRepoUrl && (
@@ -80,15 +83,15 @@ const ExecutionCard = ({ execution, onClick }: ExecutionCardProps) => {
               href={execution.gitRepoUrl} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="d-flex align-items-center gap-1 text-primary text-decoration-none"
+              className="flex items-center gap-1.5 text-primary hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
-              <ExternalLink size={14} />
+              <ExternalLink className="h-3.5 w-3.5" />
               <span>Repository</span>
             </a>
           )}
         </div>
-      </Card.Body>
+      </CardContent>
     </Card>
   );
 };
