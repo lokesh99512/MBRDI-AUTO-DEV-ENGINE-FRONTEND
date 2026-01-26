@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Container, Card, Nav, Dropdown } from 'react-bootstrap';
 import { MoreHorizontal, Plus } from 'lucide-react';
 
@@ -13,6 +14,7 @@ type ModalMode = 'create' | 'edit' | 'rename';
 
 const DashboardPage = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { user } = useAppSelector((s) => s.auth);
   const { projects, loading } = useAppSelector((s) => s.projects);
 
@@ -136,7 +138,11 @@ const DashboardPage = () => {
                 {/* Project Cards */}
                 {projects.map((p) => (
                   <div key={String(p.id)} className="col-sm-6 col-lg-4 col-xl-3">
-                    <Card className="h-100 shadow-sm" style={{ minHeight: 180 }}>
+                    <Card 
+                      className="h-100 shadow-sm" 
+                      style={{ minHeight: 180, cursor: 'pointer' }}
+                      onClick={() => navigate(`/projects/${p.id}/executions`)}
+                    >
                       <div className="bg-light" style={{ height: 90 }} />
                       <Card.Body className="d-flex flex-column">
                         <div className="d-flex align-items-start justify-content-between gap-2">
@@ -144,7 +150,7 @@ const DashboardPage = () => {
                             <div className="fw-semibold text-dark text-truncate" title={p.name}>{p.name}</div>
                             <div className="small text-muted text-truncate" title={p.description}>{p.description}</div>
                           </div>
-                          <Dropdown align="end">
+                          <Dropdown align="end" onClick={(e) => e.stopPropagation()}>
                             <Dropdown.Toggle as="button" className="btn btn-sm btn-light border-0 p-1" id={`dropdown-${p.id}`}>
                               <MoreHorizontal size={16} />
                             </Dropdown.Toggle>

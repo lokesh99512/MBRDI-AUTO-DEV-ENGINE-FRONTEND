@@ -10,6 +10,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
 import ProjectsPage from "./pages/ProjectsPage";
+import ExecutionHistoryPage from "./pages/ExecutionHistoryPage";
 import NotFound from "./pages/NotFound";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -47,6 +48,7 @@ const AppRoutes = () => (
     {/* backward compatible */}
     <Route path="/tenant/dashboard" element={<Navigate to="/dashboard" replace />} />
     <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
+    <Route path="/projects/:projectId/executions" element={<ProtectedRoute><ExecutionHistoryPage /></ProtectedRoute>} />
     <Route path="/" element={<IndexRoute />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
