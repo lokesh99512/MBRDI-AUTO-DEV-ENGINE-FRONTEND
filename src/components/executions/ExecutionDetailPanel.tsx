@@ -1,4 +1,4 @@
-import { GitBranch, GitCommit, User, Calendar, ExternalLink, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { GitBranch, GitCommit, User, Calendar, ExternalLink, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Execution, ExecutionStatus } from '@/types/execution';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -14,15 +14,14 @@ interface ExecutionDetailPanelProps {
 }
 
 const statusConfig: Record<ExecutionStatus, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string; label: string; icon: React.ReactNode }> = {
-  SUCCESS: { variant: 'default', className: 'bg-green-500 hover:bg-green-500/80', label: 'Success', icon: <CheckCircle className="h-4 w-4" /> },
-  FAILED: { variant: 'destructive', className: '', label: 'Failed', icon: <AlertCircle className="h-4 w-4" /> },
-  RUNNING: { variant: 'secondary', className: 'bg-amber-500 text-white hover:bg-amber-500/80', label: 'Running', icon: <Loader className="h-4 w-4 animate-spin" /> },
+  COMPLETED: { variant: 'default', className: 'bg-green-500 hover:bg-green-500/80', label: 'Completed', icon: <CheckCircle className="h-4 w-4" /> },
+  FAILED: { variant: 'destructive', className: '', label: 'Failed', icon: <XCircle className="h-4 w-4" /> },
 };
 
 const ExecutionDetailPanel = ({ execution, show, onClose }: ExecutionDetailPanelProps) => {
   if (!execution) return null;
 
-  const statusStyle = statusConfig[execution.status] || statusConfig.RUNNING;
+  const statusStyle = statusConfig[execution.status] || statusConfig.COMPLETED;
   const formattedCreated = format(new Date(execution.createdAt), 'PPpp');
   const formattedUpdated = format(new Date(execution.updatedAt), 'PPpp');
 

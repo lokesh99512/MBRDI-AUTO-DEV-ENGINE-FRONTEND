@@ -1,6 +1,6 @@
 // Execution History Types
 
-export type ExecutionStatus = 'SUCCESS' | 'FAILED' | 'RUNNING';
+export type ExecutionStatus = 'COMPLETED' | 'FAILED';
 
 export interface Execution {
   id: number;
@@ -28,6 +28,10 @@ export interface ExecutionPaginatedResponse {
   content: Execution[];
 }
 
+export interface CreateExecutionRequest {
+  prompt: string;
+}
+
 export interface ExecutionHistoryState {
   executions: Execution[];
   currentPage: number;
@@ -35,6 +39,7 @@ export interface ExecutionHistoryState {
   totalElements: number;
   loading: boolean;
   loadingMore: boolean;
+  creating: boolean;
   error: string | null;
   selectedExecution: Execution | null;
 }

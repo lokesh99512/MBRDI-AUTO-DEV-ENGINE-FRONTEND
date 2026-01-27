@@ -1,4 +1,4 @@
-import { GitBranch, GitCommit, User, Calendar, ExternalLink } from 'lucide-react';
+import { GitBranch, GitCommit, User, Calendar, ExternalLink, CheckCircle, XCircle } from 'lucide-react';
 import { Execution, ExecutionStatus } from '@/types/execution';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,14 +10,13 @@ interface ExecutionCardProps {
   onClick?: () => void;
 }
 
-const statusConfig: Record<ExecutionStatus, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string; label: string }> = {
-  SUCCESS: { variant: 'default', className: 'bg-green-500 hover:bg-green-500/80', label: 'Success' },
-  FAILED: { variant: 'destructive', className: '', label: 'Failed' },
-  RUNNING: { variant: 'secondary', className: 'bg-amber-500 text-white hover:bg-amber-500/80', label: 'Running' },
+const statusConfig: Record<ExecutionStatus, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string; label: string; icon: React.ReactNode }> = {
+  COMPLETED: { variant: 'default', className: 'bg-green-500 hover:bg-green-500/80', label: 'Completed', icon: <CheckCircle className="h-3.5 w-3.5" /> },
+  FAILED: { variant: 'destructive', className: '', label: 'Failed', icon: <XCircle className="h-3.5 w-3.5" /> },
 };
 
 const ExecutionCard = ({ execution, onClick }: ExecutionCardProps) => {
-  const statusStyle = statusConfig[execution.status] || statusConfig.RUNNING;
+  const statusStyle = statusConfig[execution.status] || statusConfig.COMPLETED;
   const formattedDate = format(new Date(execution.createdAt), 'MMM dd, yyyy HH:mm');
   const truncatedPrompt = execution.prompt.length > 120 
     ? `${execution.prompt.substring(0, 120)}...` 
@@ -35,7 +34,8 @@ const ExecutionCard = ({ execution, onClick }: ExecutionCardProps) => {
             <GitBranch className="h-4 w-4 text-muted-foreground" />
             <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{execution.executionBranch}</code>
           </div>
-          <Badge variant={statusStyle.variant} className={cn(statusStyle.className)}>
+          <Badge variant={statusStyle.variant} className={cn('gap-1.5', statusStyle.className)}>
+            {statusStyle.icon}
             {statusStyle.label}
           </Badge>
         </div>
