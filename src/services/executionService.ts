@@ -1,8 +1,9 @@
 import { api } from './api';
-import { ExecutionPaginatedResponse } from '@/types/execution';
+import { ExecutionPaginatedResponse, Execution, CreateExecutionRequest } from '@/types/execution';
 
 const EXECUTION_ENDPOINTS = {
   HISTORY: (projectId: string | number) => `/api/executions/history/${projectId}`,
+  CREATE: (projectId: string | number) => `/api/executions/${projectId}`,
 };
 
 export const executionService = {
@@ -23,6 +24,25 @@ export const executionService = {
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch execution history');
+    }
+  },
+
+  /**
+   * Create a new execution with a prompt
+   * POST /api/executions/{projectId}
+   */
+  createExecution: async (
+    projectId: string | number,
+    data: CreateExecutionRequest
+  ): Promise<Execution> => {
+    try {
+      const response = await api.post<Execution>(
+        EXECUTION_ENDPOINTS.CREATE(projectId),
+        data
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to create execution');
     }
   },
 };

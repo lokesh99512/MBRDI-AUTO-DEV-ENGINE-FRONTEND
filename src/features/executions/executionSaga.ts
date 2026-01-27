@@ -1,7 +1,7 @@
 import { call, put, takeLatest } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
 import executionService from '@/services/executionService';
-import { ExecutionPaginatedResponse } from '@/types/execution';
+import { ExecutionPaginatedResponse, Execution, CreateExecutionRequest } from '@/types/execution';
 import {
   fetchExecutionsRequest,
   fetchExecutionsSuccess,
@@ -9,6 +9,9 @@ import {
   fetchMoreExecutionsRequest,
   fetchMoreExecutionsSuccess,
   fetchMoreExecutionsFailure,
+  createExecutionRequest,
+  createExecutionSuccess,
+  createExecutionFailure,
 } from './executionSlice';
 
 function* handleFetchExecutions(action: PayloadAction<{ projectId: string | number }>) {
@@ -39,9 +42,23 @@ function* handleFetchMoreExecutions(action: PayloadAction<{ projectId: string | 
   }
 }
 
+function* handleCreateExecution(action: PayloadAction<{ projectId: string | number; data: CreateExecutionRequest }>) {
+  try {
+    const response: Execution = yield call(
+      executionService.createExecution,
+      action.payload.projectId,
+      action.payload.data
+    );
+    yield put(createExecutionSuccess(response));
+  } catch (error: any) {
+    yield put(createExecutionFailure(error.message || 'Failed to create execution'));
+  }
+}
+
 export function* executionSaga() {
   yield takeLatest(fetchExecutionsRequest.type, handleFetchExecutions);
   yield takeLatest(fetchMoreExecutionsRequest.type, handleFetchMoreExecutions);
+  yield takeLatest(createExecutionRequest.type, handleCreateExecution);
 }
 
 export default executionSaga;

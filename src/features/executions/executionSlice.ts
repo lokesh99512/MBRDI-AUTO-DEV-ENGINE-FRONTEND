@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { ExecutionHistoryState, Execution, ExecutionPaginatedResponse } from '@/types/execution';
+import { ExecutionHistoryState, Execution, ExecutionPaginatedResponse, CreateExecutionRequest } from '@/types/execution';
 
 const initialState: ExecutionHistoryState = {
   executions: [],
@@ -8,6 +8,7 @@ const initialState: ExecutionHistoryState = {
   totalElements: 0,
   loading: false,
   loadingMore: false,
+  creating: false,
   error: null,
   selectedExecution: null,
 };
@@ -53,6 +54,21 @@ const executionSlice = createSlice({
       state.error = action.payload;
     },
 
+    // Create new execution
+    createExecutionRequest: (state, _action: PayloadAction<{ projectId: string | number; data: CreateExecutionRequest }>) => {
+      state.creating = true;
+      state.error = null;
+    },
+    createExecutionSuccess: (state, action: PayloadAction<Execution>) => {
+      state.creating = false;
+      state.executions = [action.payload, ...state.executions];
+      state.totalElements += 1;
+    },
+    createExecutionFailure: (state, action: PayloadAction<string>) => {
+      state.creating = false;
+      state.error = action.payload;
+    },
+
     // Select execution for detail panel
     selectExecution: (state, action: PayloadAction<Execution | null>) => {
       state.selectedExecution = action.payload;
@@ -70,6 +86,9 @@ export const {
   fetchMoreExecutionsRequest,
   fetchMoreExecutionsSuccess,
   fetchMoreExecutionsFailure,
+  createExecutionRequest,
+  createExecutionSuccess,
+  createExecutionFailure,
   selectExecution,
   resetExecutions,
 } = executionSlice.actions;

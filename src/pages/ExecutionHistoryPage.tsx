@@ -6,12 +6,14 @@ import MainLayout from '@/components/layout/MainLayout';
 import ExecutionCard from '@/components/executions/ExecutionCard';
 import ExecutionListSkeleton from '@/components/executions/ExecutionListSkeleton';
 import ExecutionDetailPanel from '@/components/executions/ExecutionDetailPanel';
+import PromptInputSection from '@/components/executions/PromptInputSection';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   fetchExecutionsRequest,
   fetchMoreExecutionsRequest,
+  createExecutionRequest,
   selectExecution,
   resetExecutions,
 } from '@/features/executions/executionSlice';
@@ -29,6 +31,7 @@ const ExecutionHistoryPage = () => {
     totalElements,
     loading,
     loadingMore,
+    creating,
     error,
     selectedExecution,
   } = useAppSelector((state) => state.executions);
@@ -102,6 +105,12 @@ const ExecutionHistoryPage = () => {
     }
   };
 
+  const handlePromptSubmit = (prompt: string) => {
+    if (projectId) {
+      dispatch(createExecutionRequest({ projectId, data: { prompt } }));
+    }
+  };
+
   const hasMorePages = currentPage + 1 < totalPages;
 
   return (
@@ -136,6 +145,14 @@ const ExecutionHistoryPage = () => {
             </div>
           </div>
 
+          {/* Prompt Input Section */}
+          <div className="mb-6">
+            <PromptInputSection 
+              onSubmit={handlePromptSubmit} 
+              isSubmitting={creating} 
+            />
+          </div>
+
           {/* Error State */}
           {error && !loading && (
             <Alert variant="destructive" className="mb-4">
@@ -160,11 +177,8 @@ const ExecutionHistoryPage = () => {
               </div>
               <h4 className="text-lg font-medium text-muted-foreground mb-2">No execution history found</h4>
               <p className="text-muted-foreground text-sm mb-4">
-                This project doesn't have any execution history yet.
+                Enter a prompt above to start your first execution.
               </p>
-              <Button variant="outline" onClick={() => navigate('/dashboard')}>
-                Back to Dashboard
-              </Button>
             </div>
           )}
 
