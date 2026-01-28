@@ -29,6 +29,7 @@ export interface ExecutionPaginatedResponse {
 }
 
 export interface CreateExecutionRequest {
+  projectId: number;
   prompt: string;
 }
 

@@ -32,7 +32,7 @@ apiClient.interceptors.response.use(
       const { status } = error.response;
       
       // Handle 401 Unauthorized - Clear token and redirect to login
-      if (status === 401) {
+      if (status === 401 || status === 403) {
         localStorage.removeItem('authToken');
         sessionStorage.removeItem('authToken');
         // Dispatch a custom event to notify the app of logout

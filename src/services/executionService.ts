@@ -2,8 +2,8 @@ import { api } from './api';
 import { ExecutionPaginatedResponse, Execution, CreateExecutionRequest } from '@/types/execution';
 
 const EXECUTION_ENDPOINTS = {
-  HISTORY: (projectId: string | number) => `/api/executions/history/${projectId}`,
-  CREATE: (projectId: string | number) => `/api/executions/${projectId}`,
+  HISTORY: (projectId: string | number) => `/api/autodev/history/${projectId}`,
+  CREATE: (projectId: string | number) => `/api/autodev/execute`,
 };
 
 export const executionService = {
@@ -36,6 +36,7 @@ export const executionService = {
     data: CreateExecutionRequest
   ): Promise<Execution> => {
     try {
+      data.projectId = Number(projectId);
       const response = await api.post<Execution>(
         EXECUTION_ENDPOINTS.CREATE(projectId),
         data
