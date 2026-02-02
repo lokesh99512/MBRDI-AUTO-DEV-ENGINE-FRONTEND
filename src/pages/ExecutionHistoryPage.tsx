@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, History, RefreshCw, Loader2 } from 'lucide-react';
 
@@ -13,6 +13,8 @@ import {
   createExecutionRequest,
   resetExecutions,
 } from '@/features/executions/executionSlice';
+
+const POLLING_INTERVAL = 5000; // 5 seconds
 
 const ExecutionHistoryPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -33,12 +35,27 @@ const ExecutionHistoryPage = () => {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   /* ================= INITIAL LOAD ================= */
   useEffect(() => {
     if (projectId) dispatch(fetchExecutionsRequest({ projectId }));
     return () => {
       dispatch(resetExecutions());
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [dispatch, projectId]);
+
+  /* ================= POLLING EVERY 5 SECONDS ================= */
+  useEffect(() => {
+    if (!projectId) return;
+
+    pollingRef.current = setInterval(() => {
+      dispatch(fetchExecutionsRequest({ projectId }));
+    }, POLLING_INTERVAL);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [dispatch, projectId]);
 
@@ -87,7 +104,7 @@ const ExecutionHistoryPage = () => {
 
   const handlePromptSubmit = (prompt: string) => {
     if (projectId) {
-      dispatch(createExecutionRequest({ projectId, data: { prompt } }));
+      dispatch(createExecutionRequest({ projectId, data: { projectId: Number(projectId), prompt } }));
     }
   };
 
@@ -173,19 +190,13 @@ const ExecutionHistoryPage = () => {
                         ${
                           execution.status === 'FAILED'
                             ? 'bg-destructive/10 border-destructive text-destructive'
-                            : execution.status === 'SUCCESS'
+                            : execution.status === 'COMPLETED'
                             ? 'bg-muted'
                             : 'bg-muted animate-pulse text-muted-foreground'
                         }`}
                     >
-                      {execution.status === 'SUCCESS' && execution.llmResponseSummary}
+                      {execution.status === 'COMPLETED' && execution.llmResponseSummary}
                       {execution.status === 'FAILED' && execution.errorMessage}
-                      {(execution.status === 'RUNNING' || execution.status === 'PENDING') && (
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Thinking...
-                        </div>
-                      )}
                     </div>
                   </div>
 
