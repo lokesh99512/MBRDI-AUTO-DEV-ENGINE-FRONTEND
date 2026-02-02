@@ -1,12 +1,13 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, History, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowLeft, History, RefreshCw, Loader2, Bot, User } from 'lucide-react';
 
 import MainLayout from '@/components/layout/MainLayout';
 import PromptInputSection from '@/components/executions/PromptInputSection';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { format } from 'date-fns';
 import {
   fetchExecutionsRequest,
   fetchMoreExecutionsRequest,
@@ -14,7 +15,7 @@ import {
   resetExecutions,
 } from '@/features/executions/executionSlice';
 
-const POLLING_INTERVAL = 5000; // 5 seconds
+const POLLING_INTERVAL = 5000;
 
 const ExecutionHistoryPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -36,6 +37,9 @@ const ExecutionHistoryPage = () => {
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Reverse executions for chat display (oldest first, newest at bottom)
+  const reversedExecutions = [...executions].reverse();
 
   /* ================= INITIAL LOAD ================= */
   useEffect(() => {
@@ -59,12 +63,12 @@ const ExecutionHistoryPage = () => {
     };
   }, [dispatch, projectId]);
 
-  /* ================= AUTO SCROLL ================= */
+  /* ================= AUTO SCROLL TO BOTTOM ================= */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [executions, creating]);
 
-  /* ================= INFINITE SCROLL ================= */
+  /* ================= INFINITE SCROLL (load older) ================= */
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       const [entry] = entries;
@@ -112,117 +116,180 @@ const ExecutionHistoryPage = () => {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-muted/30">
-        <div className="container mx-auto px-4 py-6 max-w-4xl">
-
-          {/* HEADER */}
-          <div className="mb-6">
-            <Button
-              variant="outline"
-              size="sm"
-              className="mb-4"
-              onClick={() => navigate('/dashboard')}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Projects
-            </Button>
-
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <History className="h-6 w-6 text-primary" />
+      <div className="flex flex-col h-[calc(100vh-64px)] bg-background">
+        
+        {/* HEADER */}
+        <div className="flex-shrink-0 border-b bg-card px-6 py-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/dashboard')}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <History className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-semibold">AutoDev Chat</h1>
+                  <p className="text-xs text-muted-foreground">
+                    Project #{projectId} • {totalElements} executions
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold">Execution Chat</h1>
-                <p className="text-muted-foreground text-sm">
-                  Project ID: <code>{projectId}</code>
-                  {totalElements > 0 && <span className="ml-2">• {totalElements} messages</span>}
+            </div>
+            {error && (
+              <Button size="sm" variant="outline" onClick={handleRetry}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* ERROR ALERT */}
+        {error && !loading && (
+          <div className="flex-shrink-0 px-6 pt-4">
+            <div className="max-w-4xl mx-auto">
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </div>
+          </div>
+        )}
+
+        {/* CHAT MESSAGES AREA */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="max-w-4xl mx-auto space-y-4">
+            
+            {/* LOAD MORE TRIGGER (at top) */}
+            {hasMorePages && (
+              <div ref={loadMoreTriggerRef} className="text-center py-4">
+                {loadingMore ? (
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading older messages...
+                  </div>
+                ) : (
+                  <Button variant="ghost" size="sm" className="text-muted-foreground">
+                    Load more
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* LOADING STATE */}
+            {loading && (
+              <div className="flex items-center justify-center py-20">
+                <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                  <span className="text-sm">Loading chat history...</span>
+                </div>
+              </div>
+            )}
+
+            {/* EMPTY STATE */}
+            {!loading && executions.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="p-4 bg-muted rounded-full mb-4">
+                  <Bot className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-medium mb-2">No executions yet</h3>
+                <p className="text-muted-foreground text-sm max-w-sm">
+                  Start by typing a prompt below. AutoDev will generate code based on your instructions.
                 </p>
               </div>
-            </div>
-          </div>
+            )}
 
-          {/* PROMPT INPUT */}
-          <div className="mb-4">
+            {/* CHAT MESSAGES */}
+            {!loading && reversedExecutions.map((execution) => (
+              <div key={execution.id} className="space-y-3">
+                
+                {/* USER MESSAGE */}
+                <div className="flex items-start gap-3 justify-end">
+                  <div className="flex flex-col items-end gap-1 max-w-[80%]">
+                    <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl rounded-tr-md shadow-sm">
+                      <p className="text-sm whitespace-pre-wrap">{execution.prompt}</p>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground px-1">
+                      {format(new Date(execution.createdAt), 'MMM d, HH:mm')}
+                    </span>
+                  </div>
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-4 w-4 text-primary" />
+                  </div>
+                </div>
+
+                {/* AI RESPONSE */}
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex flex-col gap-1 max-w-[80%]">
+                    <div
+                      className={`px-4 py-3 rounded-2xl rounded-tl-md shadow-sm ${
+                        execution.status === 'FAILED'
+                          ? 'bg-destructive/10 border border-destructive/20 text-destructive'
+                          : 'bg-card border'
+                      }`}
+                    >
+                      {execution.status === 'COMPLETED' && (
+                        <p className="text-sm whitespace-pre-wrap text-foreground">
+                          {execution.llmResponseSummary || 'Execution completed successfully.'}
+                        </p>
+                      )}
+                      {execution.status === 'FAILED' && (
+                        <p className="text-sm whitespace-pre-wrap">
+                          {execution.errorMessage || 'Execution failed.'}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 px-1">
+                      <span className={`text-[10px] font-medium ${
+                        execution.status === 'COMPLETED' ? 'text-green-600' : 'text-destructive'
+                      }`}>
+                        {execution.status}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">•</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {execution.executionBranch}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            ))}
+
+            {/* CREATING INDICATOR */}
+            {creating && (
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <Bot className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="bg-card border px-4 py-3 rounded-2xl rounded-tl-md shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Generating response...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div ref={chatEndRef} />
+          </div>
+        </div>
+
+        {/* CHAT INPUT (FIXED AT BOTTOM) */}
+        <div className="flex-shrink-0 border-t bg-card px-6 py-4">
+          <div className="max-w-4xl mx-auto">
             <PromptInputSection onSubmit={handlePromptSubmit} isSubmitting={creating} />
           </div>
-
-          {/* ERROR */}
-          {error && !loading && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription className="flex justify-between items-center">
-                <span><strong>Error:</strong> {error}</span>
-                <Button size="sm" variant="destructive" onClick={handleRetry}>
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                  Retry
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* LOADING INITIAL */}
-          {loading && <div className="text-center py-10">Loading chat history...</div>}
-
-          {/* EMPTY STATE */}
-          {!loading && executions.length === 0 && (
-            <div className="text-center py-16 bg-card rounded-lg border">
-              No execution history yet. Start by sending a prompt 🚀
-            </div>
-          )}
-
-          {/* CHAT WINDOW */}
-          {!loading && executions.length > 0 && (
-            <div className="bg-card border rounded-lg h-[65vh] overflow-y-auto p-4 space-y-6">
-
-              {executions.map((execution) => (
-                <div key={execution.id} className="flex flex-col gap-2">
-
-                  {/* USER MESSAGE */}
-                  <div className="flex justify-end">
-                    <div className="max-w-[75%] bg-primary text-primary-foreground px-4 py-3 rounded-2xl rounded-br-md shadow text-sm whitespace-pre-wrap">
-                      {execution.prompt}
-                    </div>
-                  </div>
-
-                  {/* SYSTEM MESSAGE */}
-                  <div className="flex justify-start">
-                    <div
-                      className={`max-w-[75%] px-4 py-3 rounded-2xl rounded-bl-md shadow text-sm whitespace-pre-wrap border
-                        ${
-                          execution.status === 'FAILED'
-                            ? 'bg-destructive/10 border-destructive text-destructive'
-                            : execution.status === 'COMPLETED'
-                            ? 'bg-muted'
-                            : 'bg-muted animate-pulse text-muted-foreground'
-                        }`}
-                    >
-                      {execution.status === 'COMPLETED' && execution.llmResponseSummary}
-                      {execution.status === 'FAILED' && execution.errorMessage}
-                    </div>
-                  </div>
-
-                </div>
-              ))}
-
-              {/* Creating New Execution Bubble */}
-              {creating && (
-                <div className="flex justify-start">
-                  <div className="max-w-[60%] bg-muted px-4 py-3 rounded-2xl rounded-bl-md animate-pulse text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
-                    Thinking...
-                  </div>
-                </div>
-              )}
-
-              {/* LOAD MORE TRIGGER */}
-              <div ref={loadMoreTriggerRef} className="text-center text-xs text-muted-foreground py-2">
-                {loadingMore && "Loading older messages..."}
-                {!loadingMore && !hasMorePages && "No more history"}
-              </div>
-
-              <div ref={chatEndRef} />
-            </div>
-          )}
         </div>
+
       </div>
     </MainLayout>
   );
