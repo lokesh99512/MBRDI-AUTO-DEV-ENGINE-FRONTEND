@@ -70,17 +70,22 @@ const ExecutionHistoryPage = () => {
 
   /* ================= POLLING EVERY 5 SECONDS (Silent - no loading state) ================= */
   useEffect(() => {
-    if (!projectId || !initialLoadDone.current) return;
+    // Only start polling after initial load is complete
+    if (!projectId || isInitialLoading) return;
 
+    // Start polling immediately
     pollingRef.current = setInterval(() => {
-      // Use silent poll action - won't trigger loading state or reset data
+      console.log('Polling executions for project:', projectId);
       dispatch(pollExecutionsRequest({ projectId }));
     }, POLLING_INTERVAL);
 
     return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
     };
-  }, [dispatch, projectId]);
+  }, [dispatch, projectId, isInitialLoading]);
 
   /* ================= AUTO SCROLL ON NEW MESSAGE ================= */
   useEffect(() => {
