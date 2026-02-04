@@ -1,6 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Loader2, Bot, User, Home } from 'lucide-react';
+import { RefreshCw, Loader2, Bot, User, Home, GitBranch, CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 import PromptInputSection from '@/components/executions/PromptInputSection';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import {
   fetchExecutionsRequest,
   fetchMoreExecutionsRequest,
   createExecutionRequest,
+  pollExecutionsRequest,
   resetExecutions,
 } from '@/features/executions/executionSlice';
 
@@ -37,26 +38,43 @@ const ExecutionHistoryPage = () => {
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
-  const initialScrollDone = useRef(false);
+  const initialLoadDone = useRef(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Reverse executions for chat display (oldest first, newest at bottom)
   const reversedExecutions = [...executions].reverse();
 
   /* ================= INITIAL LOAD ================= */
   useEffect(() => {
-    if (projectId) dispatch(fetchExecutionsRequest({ projectId }));
+    if (projectId) {
+      setIsInitialLoading(true);
+      dispatch(fetchExecutionsRequest({ projectId }));
+    }
     return () => {
       dispatch(resetExecutions());
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [dispatch, projectId]);
 
-  /* ================= POLLING EVERY 5 SECONDS ================= */
+  /* ================= HANDLE INITIAL LOAD COMPLETE ================= */
   useEffect(() => {
-    if (!projectId) return;
+    if (!loading && isInitialLoading) {
+      setIsInitialLoading(false);
+      // Scroll to bottom after initial load
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'instant' });
+        initialLoadDone.current = true;
+      }, 100);
+    }
+  }, [loading, isInitialLoading]);
+
+  /* ================= POLLING EVERY 5 SECONDS (Silent - no loading state) ================= */
+  useEffect(() => {
+    if (!projectId || !initialLoadDone.current) return;
 
     pollingRef.current = setInterval(() => {
-      dispatch(fetchExecutionsRequest({ projectId }));
+      // Use silent poll action - won't trigger loading state or reset data
+      dispatch(pollExecutionsRequest({ projectId }));
     }, POLLING_INTERVAL);
 
     return () => {
@@ -64,18 +82,9 @@ const ExecutionHistoryPage = () => {
     };
   }, [dispatch, projectId]);
 
-  /* ================= SCROLL TO BOTTOM ON INITIAL LOAD ================= */
-  useEffect(() => {
-    if (!loading && executions.length > 0 && !initialScrollDone.current) {
-      // Scroll to bottom instantly on initial load
-      chatEndRef.current?.scrollIntoView({ behavior: 'instant' });
-      initialScrollDone.current = true;
-    }
-  }, [loading, executions]);
-
   /* ================= AUTO SCROLL ON NEW MESSAGE ================= */
   useEffect(() => {
-    if (creating || (initialScrollDone.current && executions.length > 0)) {
+    if (creating && initialLoadDone.current) {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [creating]);
@@ -115,27 +124,40 @@ const ExecutionHistoryPage = () => {
 
   /* ================= ACTIONS ================= */
   const handleRetry = () => {
-    if (projectId) dispatch(fetchExecutionsRequest({ projectId }));
+    if (projectId) {
+      setIsInitialLoading(true);
+      dispatch(fetchExecutionsRequest({ projectId }));
+    }
   };
 
   const handlePromptSubmit = (prompt: string) => {
     if (projectId) {
       dispatch(createExecutionRequest({ projectId, data: { projectId: Number(projectId), prompt } }));
+      // Scroll to bottom when submitting
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     }
   };
 
   const hasMorePages = currentPage + 1 < totalPages;
 
+  const getStatusIcon = (status: string) => {
+    if (status === 'COMPLETED') return <CheckCircle2 className="h-3.5 w-3.5 text-primary" />;
+    if (status === 'FAILED') return <XCircle className="h-3.5 w-3.5 text-destructive" />;
+    return <Clock className="h-3.5 w-3.5 text-muted-foreground" />;
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-gradient-to-b from-background to-muted/20">
       
-      {/* MINIMAL HEADER - NO SIDEBAR */}
-      <header className="flex-shrink-0 h-14 border-b bg-card flex items-center px-4 gap-4">
+      {/* HEADER */}
+      <header className="flex-shrink-0 h-14 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 flex items-center px-4 gap-4 z-10">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate('/dashboard')}
-          className="gap-2"
+          className="gap-2 hover:bg-primary/10"
         >
           <Home className="h-4 w-4" />
           <span className="hidden sm:inline">Dashboard</span>
@@ -143,26 +165,30 @@ const ExecutionHistoryPage = () => {
         
         <div className="h-6 w-px bg-border" />
         
-        <div className="flex-1 flex items-center gap-2">
-          <Bot className="h-5 w-5 text-primary" />
-          <span className="font-semibold text-sm">AutoDev Chat</span>
-          <span className="text-xs text-muted-foreground hidden sm:inline">
-            Project #{projectId} • {totalElements} executions
-          </span>
+        <div className="flex-1 flex items-center gap-3">
+          <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10">
+            <Bot className="h-4 w-4 text-primary" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-semibold text-sm leading-tight">AutoDev Chat</span>
+            <span className="text-xs text-muted-foreground leading-tight hidden sm:block">
+              Project #{projectId} • {totalElements} executions
+            </span>
+          </div>
         </div>
 
         {error && (
-          <Button size="sm" variant="outline" onClick={handleRetry}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
+          <Button size="sm" variant="outline" onClick={handleRetry} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            <span className="hidden sm:inline">Retry</span>
           </Button>
         )}
       </header>
 
       {/* ERROR ALERT */}
-      {error && !loading && (
+      {error && !isInitialLoading && (
         <div className="flex-shrink-0 px-4 pt-3">
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         </div>
@@ -171,63 +197,72 @@ const ExecutionHistoryPage = () => {
       {/* CHAT MESSAGES AREA */}
       <div 
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto"
+        className="flex-1 overflow-y-auto scrollbar-thin"
       >
-        <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+        <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
           
           {/* LOAD MORE TRIGGER (at top) */}
           {hasMorePages && (
-            <div ref={loadMoreTriggerRef} className="text-center py-2">
+            <div ref={loadMoreTriggerRef} className="text-center py-3">
               {loadingMore ? (
-                <div className="flex items-center justify-center gap-2 text-muted-foreground text-xs">
+                <div className="inline-flex items-center gap-2 text-muted-foreground text-xs bg-muted/50 px-4 py-2 rounded-full">
                   <Loader2 className="h-3 w-3 animate-spin" />
                   Loading older messages...
                 </div>
               ) : (
-                <span className="text-xs text-muted-foreground">Scroll up for more</span>
+                <span className="text-xs text-muted-foreground bg-muted/30 px-4 py-2 rounded-full">
+                  Scroll up for more
+                </span>
               )}
             </div>
           )}
 
-          {/* LOADING STATE */}
-          {loading && (
+          {/* INITIAL LOADING STATE */}
+          {isInitialLoading && (
             <div className="flex items-center justify-center py-32">
-              <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                <Loader2 className="h-8 w-8 animate-spin" />
-                <span className="text-sm">Loading chat history...</span>
+              <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                <div className="relative">
+                  <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                    <Bot className="h-8 w-8 text-primary" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-background border-2 border-primary flex items-center justify-center">
+                    <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                  </div>
+                </div>
+                <span className="text-sm font-medium">Loading chat history...</span>
               </div>
             </div>
           )}
 
           {/* EMPTY STATE */}
-          {!loading && executions.length === 0 && (
+          {!isInitialLoading && executions.length === 0 && (
             <div className="flex flex-col items-center justify-center py-32 text-center">
-              <div className="p-4 bg-muted rounded-full mb-4">
-                <Bot className="h-12 w-12 text-muted-foreground" />
+              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6">
+                <Bot className="h-10 w-10 text-primary" />
               </div>
-              <h3 className="text-lg font-medium mb-2">Start a conversation</h3>
-              <p className="text-muted-foreground text-sm max-w-md">
+              <h3 className="text-xl font-semibold mb-2">Start a conversation</h3>
+              <p className="text-muted-foreground text-sm max-w-md leading-relaxed">
                 Type a prompt below to start generating code. AutoDev will process your request and show the results here.
               </p>
             </div>
           )}
 
           {/* CHAT MESSAGES */}
-          {!loading && reversedExecutions.map((execution) => (
-            <div key={execution.id} className="space-y-4">
+          {!isInitialLoading && reversedExecutions.map((execution) => (
+            <div key={execution.id} className="space-y-4 animate-in fade-in-0 duration-300">
               
               {/* USER MESSAGE */}
               <div className="flex justify-end">
-                <div className="flex items-start gap-3 max-w-[85%]">
-                  <div className="flex flex-col items-end gap-1">
-                    <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl rounded-tr-sm">
+                <div className="flex items-end gap-3 max-w-[85%]">
+                  <div className="flex flex-col items-end gap-1.5">
+                    <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl rounded-br-md shadow-sm">
                       <p className="text-sm whitespace-pre-wrap leading-relaxed">{execution.prompt}</p>
                     </div>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[10px] text-muted-foreground px-1">
                       {format(new Date(execution.createdAt), 'MMM d, HH:mm')}
                     </span>
                   </div>
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                  <div className="flex-shrink-0 w-9 h-9 rounded-full bg-primary shadow-sm flex items-center justify-center">
                     <User className="h-4 w-4 text-primary-foreground" />
                   </div>
                 </div>
@@ -235,16 +270,16 @@ const ExecutionHistoryPage = () => {
 
               {/* AI RESPONSE */}
               <div className="flex justify-start">
-                <div className="flex items-start gap-3 max-w-[85%]">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                <div className="flex items-end gap-3 max-w-[85%]">
+                  <div className="flex-shrink-0 w-9 h-9 rounded-full bg-card border shadow-sm flex items-center justify-center">
                     <Bot className="h-4 w-4 text-foreground" />
                   </div>
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-1.5">
                     <div
-                      className={`px-4 py-3 rounded-2xl rounded-tl-sm ${
+                      className={`px-4 py-3 rounded-2xl rounded-bl-md shadow-sm ${
                         execution.status === 'FAILED'
-                          ? 'bg-destructive/10 border border-destructive/30'
-                          : 'bg-muted'
+                          ? 'bg-destructive/10 border border-destructive/20'
+                          : 'bg-card border'
                       }`}
                     >
                       {execution.status === 'COMPLETED' && (
@@ -259,14 +294,19 @@ const ExecutionHistoryPage = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-2 px-1">
+                      <div className="flex items-center gap-1">
+                        {getStatusIcon(execution.status)}
                       <span className={`text-[10px] font-medium ${
-                        execution.status === 'COMPLETED' ? 'text-green-600' : 'text-destructive'
-                      }`}>
-                        {execution.status}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        • {execution.executionBranch}
-                      </span>
+                          execution.status === 'COMPLETED' ? 'text-primary' : 'text-destructive'
+                        }`}>
+                          {execution.status}
+                        </span>
+                      </div>
+                      <span className="text-muted-foreground text-[10px]">•</span>
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <GitBranch className="h-3 w-3" />
+                        <span className="font-mono">{execution.executionBranch}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -277,31 +317,29 @@ const ExecutionHistoryPage = () => {
 
           {/* CREATING INDICATOR */}
           {creating && (
-            <div className="flex justify-start">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+            <div className="flex justify-start animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+              <div className="flex items-end gap-3">
+                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-card border shadow-sm flex items-center justify-center">
                   <Bot className="h-4 w-4 text-foreground" />
                 </div>
-                <div className="bg-muted px-4 py-3 rounded-2xl rounded-tl-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
+                <div className="bg-card border px-4 py-3 rounded-2xl rounded-bl-md shadow-sm">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          <div ref={chatEndRef} />
+          <div ref={chatEndRef} className="h-1" />
         </div>
       </div>
 
       {/* CHAT INPUT (FIXED AT BOTTOM) */}
-      <div className="flex-shrink-0 border-t bg-card/80 backdrop-blur-sm px-4 py-3">
-        <div className="max-w-3xl mx-auto">
+      <div className="flex-shrink-0 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 px-4 py-4">
+        <div className="max-w-4xl mx-auto">
           <PromptInputSection onSubmit={handlePromptSubmit} isSubmitting={creating} />
         </div>
       </div>

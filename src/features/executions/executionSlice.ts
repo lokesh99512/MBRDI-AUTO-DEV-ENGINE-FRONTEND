@@ -37,6 +37,21 @@ const executionSlice = createSlice({
       state.error = action.payload;
     },
 
+    // Silent polling (no loading state, no reset)
+    pollExecutionsRequest: (state, _action: PayloadAction<{ projectId: string | number }>) => {
+      // Don't set loading - this is a silent background refresh
+    },
+    pollExecutionsSuccess: (state, action: PayloadAction<ExecutionPaginatedResponse>) => {
+      // Update data without blinking - only update if there are changes
+      state.executions = action.payload.content;
+      state.currentPage = action.payload.pageNumber;
+      state.totalPages = action.payload.totalPages;
+      state.totalElements = action.payload.totalElements;
+    },
+    pollExecutionsFailure: (_state, _action: PayloadAction<string>) => {
+      // Silent fail - don't show error for polling
+    },
+
     // Fetch next page (infinite scroll)
     fetchMoreExecutionsRequest: (state, _action: PayloadAction<{ projectId: string | number; page: number }>) => {
       state.loadingMore = true;
@@ -83,6 +98,9 @@ export const {
   fetchExecutionsRequest,
   fetchExecutionsSuccess,
   fetchExecutionsFailure,
+  pollExecutionsRequest,
+  pollExecutionsSuccess,
+  pollExecutionsFailure,
   fetchMoreExecutionsRequest,
   fetchMoreExecutionsSuccess,
   fetchMoreExecutionsFailure,
