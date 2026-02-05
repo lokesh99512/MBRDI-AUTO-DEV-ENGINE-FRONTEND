@@ -1,21 +1,18 @@
-import { call, put, takeLatest } from 'redux-saga/effects';
-import { PayloadAction } from '@reduxjs/toolkit';
-import executionService from '@/services/executionService';
-import { ExecutionPaginatedResponse, Execution, CreateExecutionRequest } from '@/types/execution';
-import {
-  fetchExecutionsRequest,
-  fetchExecutionsSuccess,
-  fetchExecutionsFailure,
-  pollExecutionsRequest,
-  pollExecutionsSuccess,
-  pollExecutionsFailure,
-  fetchMoreExecutionsRequest,
-  fetchMoreExecutionsSuccess,
-  fetchMoreExecutionsFailure,
-  createExecutionRequest,
-  createExecutionSuccess,
-  createExecutionFailure,
-} from './executionSlice';
+ import { call, put, takeLatest } from 'redux-saga/effects';
+ import { PayloadAction } from '@reduxjs/toolkit';
+ import executionService from '@/services/executionService';
+ import { ExecutionPaginatedResponse, Execution, CreateExecutionRequest } from '@/types/execution';
+ import {
+   fetchExecutionsRequest,
+   fetchExecutionsSuccess,
+   fetchExecutionsFailure,
+   fetchMoreExecutionsRequest,
+   fetchMoreExecutionsSuccess,
+   fetchMoreExecutionsFailure,
+   createExecutionRequest,
+   createExecutionSuccess,
+   createExecutionFailure,
+ } from './executionSlice';
 
 function* handleFetchExecutions(action: PayloadAction<{ projectId: string | number }>) {
   try {
@@ -28,20 +25,6 @@ function* handleFetchExecutions(action: PayloadAction<{ projectId: string | numb
     yield put(fetchExecutionsSuccess(response));
   } catch (error: any) {
     yield put(fetchExecutionsFailure(error.message || 'Failed to fetch execution history'));
-  }
-}
-
-function* handlePollExecutions(action: PayloadAction<{ projectId: string | number }>) {
-  try {
-    const response: ExecutionPaginatedResponse = yield call(
-      executionService.getExecutionHistory,
-      action.payload.projectId,
-      0,
-      25
-    );
-    yield put(pollExecutionsSuccess(response));
-  } catch (error: any) {
-    yield put(pollExecutionsFailure(error.message || 'Failed to poll executions'));
   }
 }
 
@@ -74,7 +57,6 @@ function* handleCreateExecution(action: PayloadAction<{ projectId: string | numb
 
 export function* executionSaga() {
   yield takeLatest(fetchExecutionsRequest.type, handleFetchExecutions);
-  yield takeLatest(pollExecutionsRequest.type, handlePollExecutions);
   yield takeLatest(fetchMoreExecutionsRequest.type, handleFetchMoreExecutions);
   yield takeLatest(createExecutionRequest.type, handleCreateExecution);
 }

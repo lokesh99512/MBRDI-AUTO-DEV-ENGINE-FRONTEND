@@ -1,5 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { ExecutionHistoryState, Execution, ExecutionPaginatedResponse, CreateExecutionRequest } from '@/types/execution';
+ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+ import { ExecutionHistoryState, Execution, ExecutionPaginatedResponse, CreateExecutionRequest, StreamMessage } from '@/types/execution';
 
 const initialState: ExecutionHistoryState = {
   executions: [],
@@ -11,6 +11,9 @@ const initialState: ExecutionHistoryState = {
   creating: false,
   error: null,
   selectedExecution: null,
+   streamingExecutionId: null,
+   streamingMessages: [],
+   isStreaming: false,
 };
 
 const executionSlice = createSlice({
@@ -35,21 +38,6 @@ const executionSlice = createSlice({
     fetchExecutionsFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
       state.error = action.payload;
-    },
-
-    // Silent polling (no loading state, no reset)
-    pollExecutionsRequest: (state, _action: PayloadAction<{ projectId: string | number }>) => {
-      // Don't set loading - this is a silent background refresh
-    },
-    pollExecutionsSuccess: (state, action: PayloadAction<ExecutionPaginatedResponse>) => {
-      // Update data without blinking - only update if there are changes
-      state.executions = action.payload.content;
-      state.currentPage = action.payload.pageNumber;
-      state.totalPages = action.payload.totalPages;
-      state.totalElements = action.payload.totalElements;
-    },
-    pollExecutionsFailure: (_state, _action: PayloadAction<string>) => {
-      // Silent fail - don't show error for polling
     },
 
     // Fetch next page (infinite scroll)
@@ -91,6 +79,33 @@ const executionSlice = createSlice({
 
     // Reset state
     resetExecutions: () => initialState,
+     
+     // SSE Streaming actions
+     startStreaming: (state, action: PayloadAction<{ executionId: number }>) => {
+       state.streamingExecutionId = action.payload.executionId;
+       state.streamingMessages = [];
+       state.isStreaming = true;
+     },
+     addStreamMessage: (state, action: PayloadAction<StreamMessage>) => {
+       state.streamingMessages.push(action.payload);
+     },
+     stopStreaming: (state) => {
+       state.isStreaming = false;
+       state.streamingExecutionId = null;
+     },
+     clearStreamMessages: (state) => {
+       state.streamingMessages = [];
+     },
+     // Update execution status when streaming completes
+     updateExecutionStatus: (state, action: PayloadAction<{ executionId: number; status: 'COMPLETED' | 'FAILED'; llmResponseSummary?: string }>) => {
+       const execution = state.executions.find(e => e.id === action.payload.executionId);
+       if (execution) {
+         execution.status = action.payload.status;
+         if (action.payload.llmResponseSummary) {
+           execution.llmResponseSummary = action.payload.llmResponseSummary;
+         }
+       }
+     },
   },
 });
 
@@ -98,9 +113,6 @@ export const {
   fetchExecutionsRequest,
   fetchExecutionsSuccess,
   fetchExecutionsFailure,
-  pollExecutionsRequest,
-  pollExecutionsSuccess,
-  pollExecutionsFailure,
   fetchMoreExecutionsRequest,
   fetchMoreExecutionsSuccess,
   fetchMoreExecutionsFailure,
@@ -109,6 +121,11 @@ export const {
   createExecutionFailure,
   selectExecution,
   resetExecutions,
+   startStreaming,
+   addStreamMessage,
+   stopStreaming,
+   clearStreamMessages,
+   updateExecutionStatus,
 } = executionSlice.actions;
 
 export default executionSlice.reducer;

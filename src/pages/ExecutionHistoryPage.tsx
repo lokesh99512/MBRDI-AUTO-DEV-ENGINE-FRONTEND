@@ -1,6 +1,6 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+ import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { RefreshCw, Loader2, Bot, User, Home, GitBranch, CheckCircle2, XCircle, Clock } from 'lucide-react';
+ import { Loader2, Bot, User, Home, GitBranch, CheckCircle2, XCircle, Clock, Radio } from 'lucide-react';
 
 import PromptInputSection from '@/components/executions/PromptInputSection';
 import { Button } from '@/components/ui/button';
@@ -11,11 +11,14 @@ import {
   fetchExecutionsRequest,
   fetchMoreExecutionsRequest,
   createExecutionRequest,
-  pollExecutionsRequest,
   resetExecutions,
+   startStreaming,
+   addStreamMessage,
+   stopStreaming,
+   updateExecutionStatus,
 } from '@/features/executions/executionSlice';
-
-const POLLING_INTERVAL = 5000;
+ import { executionStreamService } from '@/services/executionStreamService';
+ import { StreamMessage } from '@/types/execution';
 
 const ExecutionHistoryPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -31,18 +34,25 @@ const ExecutionHistoryPage = () => {
     loadingMore,
     creating,
     error,
+     streamingMessages,
+     isStreaming,
+     streamingExecutionId,
   } = useAppSelector((state) => state.executions);
 
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const initialLoadDone = useRef(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Reverse executions for chat display (oldest first, newest at bottom)
   const reversedExecutions = [...executions].reverse();
+   
+   // Find any RUNNING execution to connect SSE
+   const runningExecution = useMemo(() => {
+     return executions.find(e => e.status === 'RUNNING');
+   }, [executions]);
 
   /* ================= INITIAL LOAD ================= */
   useEffect(() => {
@@ -52,7 +62,7 @@ const ExecutionHistoryPage = () => {
     }
     return () => {
       dispatch(resetExecutions());
-      if (pollingRef.current) clearInterval(pollingRef.current);
+       executionStreamService.disconnect();
     };
   }, [dispatch, projectId]);
 
@@ -68,24 +78,65 @@ const ExecutionHistoryPage = () => {
     }
   }, [loading, isInitialLoading]);
 
-  /* ================= POLLING EVERY 5 SECONDS (Silent - no loading state) ================= */
+ /* ================= SSE STREAMING FOR RUNNING EXECUTION ================= */
   useEffect(() => {
-    // Only start polling after initial load is complete
-    if (!projectId || isInitialLoading) return;
-
-    // Start polling immediately
-    pollingRef.current = setInterval(() => {
-      console.log('Polling executions for project:', projectId);
-      dispatch(pollExecutionsRequest({ projectId }));
-    }, POLLING_INTERVAL);
-
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
-  }, [dispatch, projectId, isInitialLoading]);
+   // Only connect if there's a running execution and we're not already streaming it
+   if (!runningExecution || isInitialLoading) return;
+   
+   // Already streaming this execution
+   if (executionStreamService.isConnected(runningExecution.id)) return;
+   
+   console.log('[SSE] Found RUNNING execution, connecting:', runningExecution.id);
+   dispatch(startStreaming({ executionId: runningExecution.id }));
+   
+   executionStreamService.connect(runningExecution.id, {
+     onOpen: () => {
+       console.log('[SSE] Stream opened for execution:', runningExecution.id);
+     },
+     onMessage: (message: string) => {
+       const streamMsg: StreamMessage = {
+         id: `${runningExecution.id}-${Date.now()}`,
+         executionId: runningExecution.id,
+         message,
+         timestamp: new Date().toISOString(),
+       };
+       dispatch(addStreamMessage(streamMsg));
+       
+       // Auto scroll to bottom when new message arrives
+       setTimeout(() => {
+         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+       }, 50);
+     },
+     onComplete: () => {
+       console.log('[SSE] Execution completed:', runningExecution.id);
+       dispatch(updateExecutionStatus({ 
+         executionId: runningExecution.id, 
+         status: 'COMPLETED',
+         llmResponseSummary: 'Execution completed successfully.'
+       }));
+       dispatch(stopStreaming());
+     },
+     onError: (errorMsg: string) => {
+       console.error('[SSE] Stream error:', errorMsg);
+       dispatch(updateExecutionStatus({ 
+         executionId: runningExecution.id, 
+         status: 'FAILED' 
+       }));
+       dispatch(stopStreaming());
+     },
+   });
+   
+   return () => {
+     // Don't disconnect on every re-render, only on unmount
+   };
+ }, [dispatch, runningExecution, isInitialLoading]);
+ 
+ // Cleanup SSE on unmount
+ useEffect(() => {
+   return () => {
+     executionStreamService.disconnect();
+   };
+ }, []);
 
   /* ================= AUTO SCROLL ON NEW MESSAGE ================= */
   useEffect(() => {
@@ -150,6 +201,7 @@ const ExecutionHistoryPage = () => {
   const getStatusIcon = (status: string) => {
     if (status === 'COMPLETED') return <CheckCircle2 className="h-3.5 w-3.5 text-primary" />;
     if (status === 'FAILED') return <XCircle className="h-3.5 w-3.5 text-destructive" />;
+ if (status === 'RUNNING') return <Loader2 className="h-3.5 w-3.5 text-accent-foreground animate-spin" />;
     return <Clock className="h-3.5 w-3.5 text-muted-foreground" />;
   };
 
@@ -183,11 +235,17 @@ const ExecutionHistoryPage = () => {
         </div>
 
         {error && (
-          <Button size="sm" variant="outline" onClick={handleRetry} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            <span className="hidden sm:inline">Retry</span>
-          </Button>
+           <Button size="sm" variant="outline" onClick={handleRetry} className="gap-2">
+             Retry
+           </Button>
         )}
+         
+         {isStreaming && (
+           <div className="flex items-center gap-2 text-xs text-primary">
+             <Radio className="h-3 w-3 animate-pulse" />
+             <span className="hidden sm:inline">Live</span>
+           </div>
+         )}
       </header>
 
       {/* ERROR ALERT */}
@@ -280,29 +338,40 @@ const ExecutionHistoryPage = () => {
                     <Bot className="h-4 w-4 text-foreground" />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <div
-                      className={`px-4 py-3 rounded-2xl rounded-bl-md shadow-sm ${
-                        execution.status === 'FAILED'
-                          ? 'bg-destructive/10 border border-destructive/20'
-                          : 'bg-card border'
-                      }`}
-                    >
-                      {execution.status === 'COMPLETED' && (
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground">
-                          {execution.llmResponseSummary || 'Execution completed successfully.'}
-                        </p>
-                      )}
-                      {execution.status === 'FAILED' && (
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed text-destructive">
-                          {execution.errorMessage || 'Execution failed.'}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 px-1">
+                     {execution.status !== 'RUNNING' && (
+                       <div
+                         className={`px-4 py-3 rounded-2xl rounded-bl-md shadow-sm ${
+                           execution.status === 'FAILED'
+                             ? 'bg-destructive/10 border border-destructive/20'
+                             : 'bg-card border'
+                         }`}
+                       >
+                         {execution.status === 'COMPLETED' && (
+                           <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground">
+                             {execution.llmResponseSummary || 'Execution completed successfully.'}
+                           </p>
+                         )}
+                         {execution.status === 'FAILED' && (
+                           <p className="text-sm whitespace-pre-wrap leading-relaxed text-destructive">
+                             {execution.errorMessage || 'Execution failed.'}
+                           </p>
+                         )}
+                       </div>
+                     )}
+                     {execution.status === 'RUNNING' && streamingMessages.length === 0 && (
+                       <div className="px-4 py-3 rounded-2xl rounded-bl-md shadow-sm bg-card border">
+                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                           <Loader2 className="h-4 w-4 animate-spin" />
+                           <span>Processing your request...</span>
+                         </div>
+                       </div>
+                     )}
+                     {execution.status !== 'RUNNING' && (
+                       <div className="flex items-center gap-2 px-1">
                       <div className="flex items-center gap-1">
                         {getStatusIcon(execution.status)}
                       <span className={`text-[10px] font-medium ${
-                          execution.status === 'COMPLETED' ? 'text-primary' : 'text-destructive'
+                           execution.status === 'COMPLETED' ? 'text-primary' : 'text-destructive'
                         }`}>
                           {execution.status}
                         </span>
@@ -313,10 +382,30 @@ const ExecutionHistoryPage = () => {
                         <span className="font-mono">{execution.executionBranch}</span>
                       </div>
                     </div>
+                     )}
                   </div>
                 </div>
               </div>
 
+               {/* SSE Streaming Messages for RUNNING execution */}
+               {execution.status === 'RUNNING' && streamingExecutionId === execution.id && streamingMessages.length > 0 && (
+                 <div className="flex justify-start">
+                   <div className="flex items-start gap-3 max-w-[85%]">
+                     <div className="w-9 flex-shrink-0" /> {/* Spacer for alignment */}
+                     <div className="flex flex-col gap-2 w-full">
+                       {streamingMessages.map((msg) => (
+                         <div
+                           key={msg.id}
+                           className="px-3 py-2 rounded-lg bg-accent/50 border text-sm text-foreground animate-in fade-in-0 slide-in-from-left-2 duration-200"
+                         >
+                           {msg.message}
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 </div>
+               )}
+               
             </div>
           ))}
 

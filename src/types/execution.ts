@@ -1,6 +1,6 @@
-// Execution History Types
+ // Execution History Types
 
-export type ExecutionStatus = 'COMPLETED' | 'FAILED';
+ export type ExecutionStatus = 'COMPLETED' | 'FAILED' | 'RUNNING';
 
 export interface Execution {
   id: number;
@@ -43,4 +43,16 @@ export interface ExecutionHistoryState {
   creating: boolean;
   error: string | null;
   selectedExecution: Execution | null;
-}
+ 
+   // SSE Streaming state
+   streamingExecutionId: number | null;
+   streamingMessages: StreamMessage[];
+   isStreaming: boolean;
+ }
+ 
+ export interface StreamMessage {
+   id: string;
+   executionId: number;
+   message: string;
+   timestamp: string;
+ }
