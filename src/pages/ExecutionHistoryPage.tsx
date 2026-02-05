@@ -53,7 +53,7 @@ const ExecutionHistoryPage = () => {
    
    // Find any RUNNING execution to connect SSE
    const runningExecution = useMemo(() => {
-     return executions.find(e => e.status === 'CREATED' || e.status === 'ANALYZING_CODE' || e.status === 'CLONING_REPO');
+     return executions.find(e => e.status === 'RUNNING');
    }, [executions]);
 
   /* ================= INITIAL LOAD ================= */
@@ -346,7 +346,7 @@ const ExecutionHistoryPage = () => {
                     <Bot className="h-4 w-4 text-foreground" />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                     {execution.status !== 'CREATED' && (
+                     {execution.status !== 'RUNNING' && (
                        <div
                          className={`px-4 py-3 rounded-2xl rounded-bl-md shadow-sm ${
                            execution.status === 'FAILED'
@@ -366,7 +366,7 @@ const ExecutionHistoryPage = () => {
                          )}
                        </div>
                      )}
-                     {execution.status === 'CREATED' && streamingMessages.length === 0 && (
+                     {execution.status === 'RUNNING' && streamingMessages.length === 0 && (
                        <div className="px-4 py-3 rounded-2xl rounded-bl-md shadow-sm bg-card border">
                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
                            <Loader2 className="h-4 w-4 animate-spin" />
@@ -374,7 +374,7 @@ const ExecutionHistoryPage = () => {
                          </div>
                        </div>
                      )}
-                     {execution.status !== 'CREATED' && (
+                     {execution.status !== 'RUNNING' && (
                        <div className="flex items-center gap-2 px-1">
                       <div className="flex items-center gap-1">
                         {getStatusIcon(execution.status)}
@@ -396,7 +396,7 @@ const ExecutionHistoryPage = () => {
               </div>
 
                {/* SSE Streaming Messages for RUNNING execution */}
-               {execution.status === 'CREATED' && streamingExecutionId === execution.id && streamingMessages.length > 0 && (
+               {execution.status === 'RUNNING' && streamingExecutionId === execution.id && streamingMessages.length > 0 && (
                  <div className="flex justify-start">
                    <div className="flex items-start gap-3 max-w-[85%]">
                      <div className="w-9 flex-shrink-0" /> {/* Spacer for alignment */}
