@@ -1,4 +1,4 @@
-import { GitBranch, GitCommit, User, Calendar, ExternalLink, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+ import { GitBranch, GitCommit, User, Calendar, ExternalLink, AlertCircle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Execution, ExecutionStatus } from '@/types/execution';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -16,6 +16,7 @@ interface ExecutionDetailPanelProps {
 const statusConfig: Record<ExecutionStatus, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string; label: string; icon: React.ReactNode }> = {
   COMPLETED: { variant: 'default', className: 'bg-green-500 hover:bg-green-500/80', label: 'Completed', icon: <CheckCircle className="h-4 w-4" /> },
   FAILED: { variant: 'destructive', className: '', label: 'Failed', icon: <XCircle className="h-4 w-4" /> },
+   RUNNING: { variant: 'secondary', className: 'bg-blue-500 hover:bg-blue-500/80 text-white', label: 'Running', icon: <Loader2 className="h-4 w-4 animate-spin" /> },
 };
 
 const ExecutionDetailPanel = ({ execution, show, onClose }: ExecutionDetailPanelProps) => {
