@@ -16,6 +16,7 @@ import {
    addStreamMessage,
    stopStreaming,
    updateExecutionStatus,
+   clearStreamMessages,
 } from '@/features/executions/executionSlice';
  import { executionStreamService } from '@/services/executionStreamService';
  import { StreamMessage } from '@/types/execution';
@@ -45,6 +46,7 @@ const ExecutionHistoryPage = () => {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const initialLoadDone = useRef(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const lastConnectedExecutionRef = useRef<number | null>(null);
 
   // Reverse executions for chat display (oldest first, newest at bottom)
   const reversedExecutions = [...executions].reverse();
@@ -83,10 +85,14 @@ const ExecutionHistoryPage = () => {
    // Only connect if there's a running execution and we're not already streaming it
    if (!runningExecution || isInitialLoading) return;
    
-   // Already streaming this execution
-   if (executionStreamService.isConnected(runningExecution.id)) return;
+   // Already connected to this execution
+   if (lastConnectedExecutionRef.current === runningExecution.id) return;
    
    console.log('[SSE] Found RUNNING execution, connecting:', runningExecution.id);
+   lastConnectedExecutionRef.current = runningExecution.id;
+   
+   // Clear previous messages and start fresh
+   dispatch(clearStreamMessages());
    dispatch(startStreaming({ executionId: runningExecution.id }));
    
    executionStreamService.connect(runningExecution.id, {
@@ -115,6 +121,7 @@ const ExecutionHistoryPage = () => {
          llmResponseSummary: 'Execution completed successfully.'
        }));
        dispatch(stopStreaming());
+       lastConnectedExecutionRef.current = null;
      },
      onError: (errorMsg: string) => {
        console.error('[SSE] Stream error:', errorMsg);
@@ -123,6 +130,7 @@ const ExecutionHistoryPage = () => {
          status: 'FAILED' 
        }));
        dispatch(stopStreaming());
+       lastConnectedExecutionRef.current = null;
      },
    });
    
