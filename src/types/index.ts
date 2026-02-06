@@ -69,6 +69,8 @@ export interface Project {
   status: ProjectStatus;
   type?: ProjectType;
   technologies?: TechnologyStack[];
+  gitRepoUrl?: string | null;
+  baseBranch?: string;
   createdAt?: string;
   updatedAt?: string;
   createdBy?: string;
@@ -106,6 +108,8 @@ export interface UpdateProjectPayload {
   name?: string;
   description?: string;
   status?: ProjectStatus;
+  gitRepoUrl?: string | null;
+  baseBranch?: string;
 }
 
 // Dashboard Types

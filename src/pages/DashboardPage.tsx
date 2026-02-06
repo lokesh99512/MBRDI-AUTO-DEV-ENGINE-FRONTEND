@@ -60,7 +60,16 @@ const DashboardPage = () => {
     if (upsertMode === 'create') {
       dispatch(createProjectRequest({ name: values.name, description: values.description, status: values.status }));
     } else {
-      const data: Partial<Project> = upsertMode === 'rename' ? { name: values.name } : { name: values.name, description: values.description, status: values.status };
+      const data: Partial<Project> =
+        upsertMode === 'rename'
+          ? { name: values.name }
+          : {
+              name: values.name,
+              description: values.description,
+              status: values.status,
+              baseBranch: values.baseBranch?.trim() || undefined,
+              gitRepoUrl: values.gitRepoUrl?.trim() || undefined,
+            };
       dispatch(updateProjectRequest({ id: String(selectedProject!.id), data }));
     }
     setShowUpsertModal(false);
