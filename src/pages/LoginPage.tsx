@@ -171,8 +171,10 @@ const LoginPage = () => {
             <Formik
               initialValues={{ username: '', password: '', rememberMe: false }}
               validationSchema={validationSchema}
-              onSubmit={(values) => {
+              onSubmit={(values, { setSubmitting }) => {
                 dispatch(loginRequest(values));
+                // Formik keeps isSubmitting=true unless we reset it.
+                setSubmitting(false);
               }}
             >
               {({ handleSubmit, handleChange, handleBlur, values, touched, errors, isSubmitting }) => (

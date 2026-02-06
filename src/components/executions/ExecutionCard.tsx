@@ -13,7 +13,13 @@ interface ExecutionCardProps {
 const statusConfig: Record<ExecutionStatus, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string; label: string; icon: React.ReactNode }> = {
   COMPLETED: { variant: 'default', className: 'bg-green-500 hover:bg-green-500/80', label: 'Completed', icon: <CheckCircle className="h-3.5 w-3.5" /> },
   FAILED: { variant: 'destructive', className: '', label: 'Failed', icon: <XCircle className="h-3.5 w-3.5" /> },
-   RUNNING: { variant: 'secondary', className: 'bg-blue-500 hover:bg-blue-500/80 text-white', label: 'Running', icon: <Loader2 className="h-3.5 w-3.5 animate-spin" /> },
+  RUNNING: { variant: 'secondary', className: 'bg-blue-500 hover:bg-blue-500/80 text-white', label: 'Running', icon: <Loader2 className="h-3.5 w-3.5 animate-spin" /> },
+  CREATED: { variant: 'secondary', className: 'bg-blue-500 hover:bg-blue-500/80 text-white', label: 'Running', icon: <Loader2 className="h-3.5 w-3.5 animate-spin" /> },
+  CLONING_REPO: { variant: 'secondary', className: 'bg-blue-500 hover:bg-blue-500/80 text-white', label: 'Running', icon: <Loader2 className="h-3.5 w-3.5 animate-spin" /> },
+  ANALYZING_CODE: { variant: 'secondary', className: 'bg-blue-500 hover:bg-blue-500/80 text-white', label: 'Running', icon: <Loader2 className="h-3.5 w-3.5 animate-spin" /> },
+  CALLING_LLM: { variant: 'secondary', className: 'bg-blue-500 hover:bg-blue-500/80 text-white', label: 'Running', icon: <Loader2 className="h-3.5 w-3.5 animate-spin" /> },
+  APPLYING_CHANGES: { variant: 'secondary', className: 'bg-blue-500 hover:bg-blue-500/80 text-white', label: 'Running', icon: <Loader2 className="h-3.5 w-3.5 animate-spin" /> },
+  COMMITTING: { variant: 'secondary', className: 'bg-blue-500 hover:bg-blue-500/80 text-white', label: 'Running', icon: <Loader2 className="h-3.5 w-3.5 animate-spin" /> },
 };
 
 const ExecutionCard = ({ execution, onClick }: ExecutionCardProps) => {
