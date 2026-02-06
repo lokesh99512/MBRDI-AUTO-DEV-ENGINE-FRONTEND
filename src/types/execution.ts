@@ -1,6 +1,6 @@
  // Execution History Types
 
- export type ExecutionStatus = 'COMPLETED' | 'FAILED' | 'RUNNING';
+ export type ExecutionStatus =  "CREATED"    | "CLONING_REPO"  | "ANALYZING_CODE"  | "CALLING_LLM" | "APPLYING_CHANGES"  | "COMMITTING"   |"COMPLETED"  | "FAILED" ;
 
 export interface Execution {
   id: number;
